@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from loguru import logger
 
 from bright_smile import __version__
@@ -15,6 +16,11 @@ from bright_smile.core.config import Settings, get_settings
 from bright_smile.core.errors import ErrorResponse, register_error_handlers
 from bright_smile.core.logging import configure_logging
 from bright_smile.db.mongo import create_client, init_db
+
+
+def _operation_id(route: APIRoute) -> str:
+    """Stable, readable operation IDs (e.g. `health-get_health`) for generated API clients."""
+    return f"{route.tags[0]}-{route.name}" if route.tags else route.name
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -44,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         openapi_url=f"{API_PREFIX}/openapi.json" if docs_enabled else None,
         responses={"default": {"model": ErrorResponse, "description": "Error"}},
+        generate_unique_id_function=_operation_id,
     )
     register_error_handlers(app)
     app.include_router(api_router)
