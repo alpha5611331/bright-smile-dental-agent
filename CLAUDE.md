@@ -12,15 +12,22 @@ data model, API contract, and quality bar. If you change behavior, update SPEC.m
 context/        KB PDF (source of facts). conversation.md is private and git-ignored. Never commit it.
 backend/        FastAPI (async) + LangGraph agent + Beanie/MongoDB. Python, managed with uv.
   src/bright_smile/
-    config.py     pydantic-settings Settings (the only place env vars are read)
-    kb.py         KB transcription, the only fact source for the bot
-    agent/        graph, prompts, tools, guard
-    api/          routers: chat, leads, auth, health
-    documents.py  Beanie documents · schemas.py API DTOs · priority.py · sla.py
-  tests/          unit/ · api/ · evals/ (marker `eval`, real API, manual)
+    main.py         app factory (`create_app`), lifespan, router registration
+    core/           cross-cutting: config.py (pydantic-settings, the only env reader), logging.py (loguru),
+                    errors.py (ErrorCode StrEnum, AppError, error contract)
+    api/            router.py (mounts everything under /api), deps.py (typed dependencies),
+                    routes/<resource>.py (thin HTTP handlers, no business logic)
+    schemas/        Pydantic request/response models, one module per resource
+    db/             mongo.py (client lifecycle), documents/ (Beanie documents)
+    domain/         pure business rules: priority, SLA, after-hours (no I/O)
+    services/       use cases that orchestrate db + domain (called by routes and agent tools)
+    agent/          kb.py (only fact source), prompts, guard, tools, LangGraph graph
+  tests/            unit/ (pure, no I/O) · api/ (httpx + MongoDB) · evals/ (marker `eval`, real API)
 frontend/       Next.js (App Router, TS strict) + shadcn/ui. Managed with pnpm.
 .github/        CI (`ci-ok` is the required merge check), issue/PR templates
 ```
+Layering rule: `api/routes` → `services` → `domain` + `db`. Routes stay thin, `domain` never imports `db`/`api`,
+and nothing imports from `api` except `main.py`. Add a package only when its first module lands.
 
 ## Commands
 Backend (run in `backend/`):
@@ -28,9 +35,10 @@ Backend (run in `backend/`):
 uv sync                                  # install (uv only, never pip)
 uv run fastapi dev src/bright_smile/main.py
 uv run ruff check . --fix && uv run ruff format .
-uv run mypy src
-uv run pytest                            # unit + API (needs MONGODB_URI; uses a throwaway DB)
-uv run pytest -m eval                    # live evals (needs ANTHROPIC_API_KEY)
+uv run mypy src tests
+uv run pytest                            # unit + API against local MongoDB (TEST_MONGODB_URI overrides; throwaway DB)
+uv run pre-commit install                # once: runs the same gates on every commit
+uv run pytest -m eval                    # live evals (needs OPENAI_API_KEY)
 uv run python -m bright_smile.cli export-openapi   # writes ../frontend/openapi.json
 uv run python -m bright_smile.cli hash-password    # STAFF_PASSWORD_HASH
 ```
@@ -48,14 +56,20 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 **Python**
 - Python ≥ 3.12 with modern typing (`X | None`, builtin generics, `type` aliases). `mypy --strict` must pass. No `Any`
   or `# type: ignore` without a specific error code and a reason.
-- Async-only I/O (FastAPI, PyMongo async / Beanie, `ChatAnthropic.ainvoke`/`astream`). No blocking calls in request paths.
-- Pydantic v2 everywhere. API DTOs live in `schemas.py`. Never return Beanie documents directly.
+- Async-only I/O (FastAPI, PyMongo async / Beanie, `ChatOpenAI.ainvoke`/`astream`). No blocking calls in request paths.
+- Pydantic v2 everywhere for schema validation: request and response bodies, SSE event payloads, tool inputs,
+  settings, and any dict that crosses a module boundary is a `BaseModel` (with `Field` constraints), never a bare `dict`.
+  API models live in `schemas/<resource>.py`. Never return Beanie documents directly.
+- Use `enum.StrEnum` for every closed set of string values (statuses, codes, event types, locations, priorities,
+  environment names). No raw string literals or `Literal[...]` unions for these.
 - **Configuration only through `config.Settings` (pydantic-settings)**, accessed via `get_settings()` / FastAPI
   dependency. Secrets are `SecretStr`. Never read `os.environ` elsewhere. Add each new variable to `Settings`,
   `.env.example`, and SPEC §12.1.
 - Business rules (priority, SLA, after-hours, guard) are deterministic, pure functions with unit tests. They are never delegated to the LLM.
 - Errors use the shared shape `{"error": {code, message, details}}` (SPEC §7.3).
-- Logging: structured, and **never log message content or PII**.
+- Logging: **loguru only** (`from loguru import logger`), configured once in `log.py` (JSON sink, stdlib and uvicorn
+  intercepted). Pass context as keyword fields (`logger.bind(...)` or `logger.info("event_name", key=value)`), never
+  f-strings with data. **Never log message content or PII.**
 
 **TypeScript / Next.js**
 - TS strict, server components by default, `"use client"` only where needed.
@@ -81,6 +95,7 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 - Flow: **issue → branch `<type>/<issue#>-<slug>` → PR (`Closes #N`, template filled) → `ci-ok` green → squash-merge → delete branch.**
 - Assign every issue and PR to `@kevinkamto` (`gh issue create --assignee kevinkamto`, `gh pr create --assignee kevinkamto`).
   Add type/area labels and the `v1.0 MVP` milestone.
+- Never add AI-tool attribution lines (e.g. "Generated with Claude Code") to issue or PR descriptions.
 - Never commit directly to `main`. Never force-push shared branches.
 - Conventional Commits (`feat(backend): …`, `fix(frontend): …`, `test: …`, `docs: …`, `chore(ci): …`). Small, focused commits.
   Reference the issue (`Refs #N`) and end with the `Co-Authored-By` trailer. Gates must pass locally before committing (pre-commit hooks).
@@ -90,8 +105,9 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 - Ask the user before outward-facing actions: creating repos, pushing, changing branch protection, deploying.
 
 ## Docs & references
-- Look up current library docs with Context7 (FastAPI, Beanie, PyMongo, LangGraph, langchain-anthropic, Next.js, shadcn).
-- Use the `claude-api` skill before writing or changing Anthropic/Claude integration code.
+- Look up current library docs with Context7 (FastAPI, Beanie, PyMongo, LangGraph, langchain-openai, loguru, Next.js, shadcn).
+- The LLM provider is **OpenAI** via `langchain-openai`. Check current model names and API behavior in the docs before
+  changing the integration.
 
 ## Project skills (`.claude/skills/`)
 Vendored with `npx skills add <owner/repo> -s <skill> -a claude-code --copy -y` and pinned in `skills-lock.json`.
