@@ -1,0 +1,57 @@
+"""FastAPI application factory.
+
+Run locally with `uv run fastapi dev src/bright_smile/main.py`, which serves the module-level `app`.
+"""
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from loguru import logger
+
+from bright_smile import __version__
+from bright_smile.api.router import API_PREFIX, api_router
+from bright_smile.core.config import Settings, get_settings
+from bright_smile.core.errors import ErrorResponse, register_error_handlers
+from bright_smile.core.logging import configure_logging
+from bright_smile.db.mongo import create_client, init_db
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Build the app. Tests pass explicit settings; production loads them from the environment."""
+    resolved = settings or get_settings()
+    configure_logging(resolved.log_level, json_logs=resolved.is_production)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        client = create_client(resolved)
+        app.state.settings = resolved
+        app.state.mongo_client = client
+        try:
+            await init_db(client, resolved)
+            logger.info("startup_complete", environment=resolved.environment, version=__version__)
+            yield
+        finally:
+            await client.close()
+            logger.info("shutdown_complete")
+
+    docs_enabled = not resolved.is_production
+    app = FastAPI(
+        title="Bright Smile Dental AI Front Desk API",
+        version=__version__,
+        lifespan=lifespan,
+        docs_url=f"{API_PREFIX}/docs" if docs_enabled else None,
+        redoc_url=None,
+        openapi_url=f"{API_PREFIX}/openapi.json" if docs_enabled else None,
+        responses={"default": {"model": ErrorResponse, "description": "Error"}},
+    )
+    register_error_handlers(app)
+    app.include_router(api_router)
+    return app
+
+
+def __getattr__(name: str) -> FastAPI:
+    """Lazily build `app` for ASGI servers, so importing this module never needs env vars."""
+    if name == "app":
+        return create_app()
+    raise AttributeError(name)

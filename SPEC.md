@@ -334,18 +334,20 @@ flowchart LR
     subgraph Vercel
         N[Next.js app<br/>rewrites /api/* → backend]
     end
-    subgraph Railway
+    subgraph Render
         F[FastAPI async<br/>LangGraph agent]
     end
     W & D --> N --> F
-    F -->|ChatAnthropic, prompt-cached KB| C[(Claude API)]
+    F -->|ChatOpenAI, KB-first prompt prefix| C[(OpenAI API)]
     F -->|Beanie / PyMongo async| M[(MongoDB Atlas)]
 ```
 
 ### 9.1 Agent graph
 `START → guard → agent ⇄ tools → END`
 - **guard** (deterministic): keyword and pattern checks for emergency and medical intent. Sets flags and adds required-guidance instructions.
-- **agent**: `ChatAnthropic` (default model `claude-sonnet-5-5`, configurable) bound to `capture_lead`. The system prompt is the rules from §4 plus the full KB, cached with `cache_control`.
+- **agent**: `ChatOpenAI` from `langchain-openai` (model set by `OPENAI_MODEL`, default `gpt-5.4-mini`) bound to `capture_lead`.
+  The system prompt is the full KB followed by the rules from §4. It is byte-identical across requests, so OpenAI's
+  automatic prompt caching applies to the shared prefix.
 - **tools**: `capture_lead` validates input with the same Pydantic schema as the API, computes priority, SLA, and after-hours, then persists. Validation errors go back to the model so it can re-ask the user.
 - Tokens are streamed with `graph.astream(stream_mode="messages", version="v2")` and relayed as SSE `token` events.
 
@@ -365,7 +367,8 @@ flowchart LR
 
 ### 10.1 Data handling
 - PII stored: name, phone, email, free-text reason, chat transcript. No other sensitive fields are requested (§4.7).
-- Logs are structured JSON and **never include message bodies, names, phones, or emails**. They contain IDs, event types, latencies, and token counts only.
+- Logging uses **loguru** with one JSON sink to stdout. Standard-library and uvicorn logs are routed through it.
+  Logs **never include message bodies, names, phones, or emails**. They contain IDs, event types, latencies, and token counts only.
 - Anonymous conversations are purged after 90 days (TTL). Retention for leads is a practice decision (out of scope for v1).
 - Secrets only come from environment variables. `.env` is git-ignored, and `.env.example` documents the variables.
 - **Not HIPAA-ready.** Production use would need a BAA with every vendor that handles PHI, access audit logging, per-user accounts, and a retention policy.
@@ -394,7 +397,7 @@ first `X-Forwarded-For` hop, and only when `TRUST_PROXY_HEADERS=true`.
 |---|---|---|---|
 | Unit | pytest | ✅ | priority, SLA and after-hours (incl. weekend and DST boundaries), phone and email validation, guard patterns, KB integrity |
 | API | pytest + httpx `AsyncClient`, **fake chat model**, MongoDB service | ✅ | SSE event order, lead persistence, form fallback, validation errors, auth required, rate limits, pagination |
-| Evals | pytest `-m eval`, real Claude API | ❌ manual, needs a key | golden scenarios below |
+| Evals | pytest `-m eval`, real OpenAI API | ❌ manual, needs a key | golden scenarios below |
 | Frontend | ESLint, `tsc --noEmit`, Prettier, `next build` | ✅ | static correctness |
 | E2E (manual) | browser automation | ❌ | chat → lead → dashboard → status change, mobile + desktop, keyboard |
 
@@ -426,7 +429,14 @@ first `X-Forwarded-For` hop, and only when `TRUST_PROXY_HEADERS=true`.
 |---|---|---|---|
 | Local | `uv run fastapi dev` (:8000) | `pnpm dev` (:3000) | locally installed MongoDB (8.x service) at `mongodb://localhost:27017` |
 | CI | pytest | lint/typecheck/build | `mongo` service container |
-| Production | Railway (Docker, official uv image) | Vercel | MongoDB Atlas (IP allowlist, least-privilege user) |
+| Production | Render free web service (Docker, official uv image) | Vercel | MongoDB Atlas M0 (least-privilege user, TLS) |
+
+Production notes:
+- **Render free tier sleeps after about 15 minutes without traffic** and takes up to a minute to wake. Before a demo, call
+  `GET /api/health` to warm the service. The chat widget shows a "waking up" state if the first request is slow.
+- Render free instances have no static outbound IPs, so Atlas network access is `0.0.0.0/0`. The database user is therefore
+  least-privilege (`readWrite` on `bright_smile` only) with a long random password, and all connections use TLS.
+- A single Render instance keeps the in-memory rate limiter valid (§10.2).
 
 ### 12.1 Environment variables
 **Backend** (`backend/.env`). All backend configuration loads through one **pydantic-settings** class
@@ -437,10 +447,11 @@ cached `get_settings()` and injected as a FastAPI dependency, which tests overri
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | ✅ | none | Claude API key |
-| `ANTHROPIC_MODEL` | | `claude-sonnet-5-5` | chat model |
+| `OPENAI_API_KEY` | ✅ | none | OpenAI API key |
+| `OPENAI_MODEL` | | `gpt-5.4-mini` | chat model |
 | `MONGODB_URI` | ✅ | none | MongoDB connection string (local: `mongodb://localhost:27017`) |
 | `MONGODB_DB` | | `bright_smile` | database name |
+| `MONGODB_SERVER_SELECTION_TIMEOUT_MS` | | `5000` | how long a MongoDB call waits for a reachable server |
 | `SESSION_SECRET` | ✅ | none | ≥ 32 random bytes, used to sign the session cookie |
 | `STAFF_PASSWORD_HASH` | ✅ | none | Argon2 hash. Generate with `uv run python -m bright_smile.cli hash-password`. |
 | `ENVIRONMENT` | | `development` | `development` \| `production` (controls `Secure` cookies and docs exposure) |
