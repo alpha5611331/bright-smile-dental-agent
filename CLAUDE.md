@@ -92,14 +92,16 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 - Check before committing: `git grep -nP '\x{2014}' -- . ':!.claude/skills'` must return nothing.
 
 ## Git & GitHub workflow
-- Flow: **issue → branch `<type>/<issue#>-<slug>` → PR (`Closes #N`, template filled) → `ci-ok` green → squash-merge → delete branch.**
+- Flow: **issue → branch `<type>/<issue#>-<slug>` → PR (`Closes #N`, template filled) → `ci-ok` green → merge commit → delete branch.**
 - Assign every issue and PR to `@kevinkamto` (`gh issue create --assignee kevinkamto`, `gh pr create --assignee kevinkamto`).
   Add type/area labels and the `v1.0 MVP` milestone.
 - Never add AI-tool attribution lines (e.g. "Generated with Claude Code") to issue or PR descriptions.
 - Never commit directly to `main`. Never force-push shared branches.
-- Conventional Commits (`feat(backend): …`, `fix(frontend): …`, `test: …`, `docs: …`, `chore(ci): …`). Small, focused commits.
-  Reference the issue (`Refs #N`) and end with the `Co-Authored-By` trailer. Gates must pass locally before committing (pre-commit hooks).
-- The repo allows squash merges only (PR title becomes the commit). GitHub deletes the remote branch on merge. Afterwards,
+- Conventional Commits (`feat(backend): …`, `fix(frontend): …`, `test: …`, `docs: …`, `chore(ci): …`).
+  **Commit step by step, one logical change per commit**, each passing the hooks on its own (they run on the staged
+  snapshot). Reference the issue (`Refs #N`) and end with the `Co-Authored-By` trailer.
+- PR titles are Conventional Commits, because the repo allows **merge commits only** and uses the PR title as the merge
+  commit title. Every step-by-step commit is preserved on `main`. GitHub deletes the remote branch on merge. Afterwards,
   clean up locally: `git switch main && git pull --ff-only && git fetch --prune && git branch -d <branch>`.
 - Never commit `.env`, secrets, or `context/conversation.md`.
 - Ask the user before outward-facing actions: creating repos, pushing, changing branch protection, deploying.
