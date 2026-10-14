@@ -23,7 +23,7 @@ backend/        FastAPI (async) + LangGraph agent + Beanie/MongoDB. Python, mana
     services/       use cases that orchestrate db + domain (called by routes and agent tools)
     agent/          kb.py (only fact source), prompts, guard, tools, LangGraph graph
   tests/            unit/ (pure, no I/O) · api/ (httpx + MongoDB) · evals/ (marker `eval`, real API)
-frontend/       Next.js (App Router, TS strict) + shadcn/ui. Managed with pnpm.
+frontend/       Next.js 16 (App Router, TS strict, Cache Components) + shadcn/ui (base-nova). pnpm. See frontend/CLAUDE.md.
 .github/        CI (`ci-ok` is the required merge check), issue/PR templates
 ```
 Layering rule: `api/routes` → `services` → `domain` + `db`. Routes stay thin, `domain` never imports `db`/`api`,
@@ -46,7 +46,7 @@ Frontend (run in `frontend/`):
 ```bash
 pnpm install
 pnpm dev | pnpm lint | pnpm typecheck | pnpm format | pnpm build
-pnpm gen:api                             # openapi.json → lib/api-types.ts
+pnpm gen:api                             # openapi.json -> src/lib/api/schema.d.ts (check:api fails on drift)
 pnpm dlx shadcn@latest add <component>   # add UI components via the CLI only
 ```
 Local MongoDB: the locally installed MongoDB service at `mongodb://localhost:27017` (no Docker for local dev).
@@ -88,8 +88,8 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 - **Never use em-dashes (U+2014)** anywhere: code, comments, docs, UI copy, bot prompts and replies, commit messages,
   PR and issue text. Use a colon, comma, parentheses, or a separate sentence instead.
 - En-dashes (`–`) are fine only inside numeric ranges copied from the KB (e.g. `$1,100 – $1,500`, `8:00 AM – 5:00 PM`).
-- The rule covers everything we author. Vendored third-party skills in `.claude/skills/` are excluded and never hand-edited.
-- Check before committing: `git grep -nP '\x{2014}' -- . ':!.claude/skills'` must return nothing.
+- The rule covers everything we author. Vendored skills (`.claude/skills/`) and the `next dev`-generated `frontend/AGENTS.md` are excluded and never hand-edited.
+- Check before committing: `git grep -nP '\x{2014}' -- . ':!.claude/skills' ':!frontend/AGENTS.md'` must return nothing.
 
 ## Git & GitHub workflow
 - Flow: **issue → branch `<type>/<issue#>-<slug>` → PR (`Closes #N`, template filled) → `ci-ok` green → merge commit → delete branch.**
