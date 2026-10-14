@@ -1,0 +1,52 @@
+# Local quality gates. Install once with:  uv run --directory backend pre-commit install
+# CI runs the same checks (see .github/workflows/ci.yml).
+default_install_hook_types: [pre-commit]
+exclude: ^\.claude/skills/ # vendored third-party skills are never modified
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: [--fix, --config=backend/pyproject.toml]
+        files: ^backend/
+      - id: ruff-format
+        args: [--config=backend/pyproject.toml]
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run --directory backend mypy src tests
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      - id: no-em-dash
+        name: no em-dashes (see CLAUDE.md "Writing style")
+        entry: "\u2014" # YAML escape, so this file never contains the character
+        language: pygrep
+        types: [text]
+
+      - id: no-private-context
+        name: never commit the private hiring conversation
+        entry: context/conversation.md must never be committed
+        language: fail
+        files: ^context/conversation\.md$
