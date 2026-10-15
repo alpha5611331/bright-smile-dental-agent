@@ -70,3 +70,8 @@ def __getattr__(name: str) -> FastAPI:
     if name == "app":
         return create_app()
     raise AttributeError(name)
+
+
+def __dir__() -> list[str]:
+    """List the lazy `app` too: `fastapi dev` and `fastapi run` look for it with `dir()`."""
+    return [*globals(), "app"]

@@ -40,3 +40,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Demo videos (scripts/videos records them; not tracked yet)
+reports/videos/

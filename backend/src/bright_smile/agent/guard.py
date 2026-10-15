@@ -33,9 +33,17 @@ _MEDICAL_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
         r"\b(ibuprofen|advil|motrin|tylenol|acetaminophen|aspirin|antibiotics?|amoxicillin|"
         r"painkillers?|medication|medicine|dosage|dose|prescription)\b",
         r"\b(should|can|could) i (take|use|apply|rinse)\b",
-        r"\bis (it|this) (normal|serious|infected)\b",
+        r"\bis (it|this|that) (normal|serious|infected|bad|dangerous)\b",
         r"\bsymptoms?\b",
+        r"\bloose (tooth|teeth|filling|crown)\b",
+        r"\bshould i be (worried|concerned)\b",
     )
+)
+
+# Milder versions of the emergency symptoms (gums that bleed when brushing). They count as a
+# medical question only when the message is not already an emergency, which has its own guidance.
+_MILD_SYMPTOM_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(p, re.IGNORECASE) for p in (r"\b(bleed(s|ing)?|bled|swollen|swelling)\b",)
 )
 
 
@@ -44,7 +52,9 @@ def detect_flags(text: str) -> frozenset[Flag]:
     flags: set[Flag] = set()
     if any(p.search(text) for p in _EMERGENCY_PATTERNS):
         flags.add(Flag.EMERGENCY)
-    if any(p.search(text) for p in _MEDICAL_PATTERNS):
+    if any(p.search(text) for p in _MEDICAL_PATTERNS) or (
+        Flag.EMERGENCY not in flags and any(p.search(text) for p in _MILD_SYMPTOM_PATTERNS)
+    ):
         flags.add(Flag.MEDICAL_QUESTION)
     return frozenset(flags)
 

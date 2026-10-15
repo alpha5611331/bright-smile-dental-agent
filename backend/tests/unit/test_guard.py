@@ -28,6 +28,10 @@ def test_emergencies_are_flagged(message: str) -> None:
         "Is it normal for my gums to be sore?",
         "What dosage of amoxicillin should I use?",
         "I think I have an infection",
+        "My gums bleed a little when I brush. Should I be worried?",
+        "One of my gums looks a bit swollen",
+        "I have a loose tooth",
+        "Should I be concerned about a white spot?",
     ],
 )
 def test_medical_questions_are_flagged(message: str) -> None:
