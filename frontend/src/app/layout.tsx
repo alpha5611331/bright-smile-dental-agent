@@ -1,31 +1,40 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Bricolage_Grotesque, Lexend } from "next/font/google";
 
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const bodyFont = Lexend({ subsets: ["latin"], variable: "--font-sans" });
+const displayFont = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
   title: {
-    default: "Bright Smile Dental | Family and Cosmetic Dentistry in Bethesda and Rockville",
+    default: "Bright Smile Dental | Family and cosmetic dentistry in Bethesda and Rockville",
     template: "%s | Bright Smile Dental",
   },
   description:
-    "Family and cosmetic dental care in Montgomery County, Maryland. New patients welcome at our Bethesda and Rockville offices.",
+    "Family and cosmetic dental care in Montgomery County, Maryland. Published prices, a $149 new patient visit, and offices in Bethesda and Rockville.",
   applicationName: "Bright Smile Dental",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#f7f8f5",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={cn("font-sans antialiased", geist.variable)}>
-      <body className="min-h-dvh bg-background text-foreground">{children}</body>
+    <html
+      lang="en"
+      className={cn("font-sans antialiased", bodyFont.variable, displayFont.variable)}
+    >
+      <body className="min-h-dvh bg-background text-foreground">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
