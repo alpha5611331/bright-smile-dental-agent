@@ -16,6 +16,9 @@ src/
   lib/practice.ts      typed access to content/kb.json (generated from the backend KB, never edit)
   components/chat/     chat widget (Dialog + MessageScroller), composer, notices, form fallback
   components/marketing/ landing page sections
+  components/leads/    staff dashboard (table, filters, detail sheet, stats, login)
+  lib/leads/           format.ts (labels, SLA, practice-time formatting) + queries.ts (TanStack Query hooks)
+  proxy.ts             optimistic auth gate for /dashboard (Next 16 replacement for middleware)
   lib/utils.ts         `cn()` helper
   env.ts               zod-validated server env (BACKEND_URL); the browser never sees it
 ```

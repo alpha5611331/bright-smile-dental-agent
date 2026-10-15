@@ -28,6 +28,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
+      suppressHydrationWarning
       lang="en"
       className={cn("font-sans antialiased", bodyFont.variable, displayFont.variable)}
     >
