@@ -324,11 +324,21 @@ Next.js (App Router, TypeScript strict) + shadcn/ui (Tailwind v4). Server compon
   page and the assistant never disagree. CI fails if the generated files drift.
 
 ### 8.3 Dashboard
-- shadcn DataTable: name, interest, priority badge (P1 red · P2 amber · P3 blue · P4 gray), location, created, SLA countdown (overdue highlighted), status.
-- Filters: status, priority, location. Default view: open leads sorted by priority, then oldest first.
-- Row click → Sheet with contact details (click-to-call `tel:` link, `mailto:`), reason, flags, transcript, status select, notes.
-- Optimistic status updates with rollback + `sonner` toast on failure.
-- Loading skeletons, empty state, error state. Light and dark mode (`next-themes`).
+- `/dashboard` is gated by `src/proxy.ts` (optimistic cookie check, redirect to `/dashboard/login?next=...`). The
+  backend verifies every request; a `401` clears cached patient data and returns to login, then back to the same view.
+  Only same-site `/dashboard` paths are accepted as `next` (no open redirect).
+- Lead table: priority badge (P1 red, P2 sunflower, P3 pine, P4 mist), name with interest and an after-hours note,
+  office, received (relative, exact practice time on hover), callback SLA countdown ("Due in 3 h", "Overdue by 2 h";
+  overdue rows tinted), status. The name is a button so rows open from the keyboard.
+- Filters live in the URL (shareable, survive reload): view (*Open* = new and contacted, by default; each status;
+  *All*), priority, office, sort. Default sort: priority, then oldest first. 25 per page.
+- Detail sheet: priority and SLA, one-tap call (`tel:`) and email, safety flags as a "Review before calling" alert,
+  reason, office, patient type, first-contact time, status select, notes, and the chat transcript.
+- Status and notes changes are optimistic with rollback and a `sonner` toast either way. Lists refresh every 60 s and
+  on window focus, so new requests appear without a reload.
+- Stat cards: new today, overdue callbacks, open high-value consults, after-hours share.
+- Loading skeletons, empty state with a "Show all leads" action, error state with retry. Light, dark, and system
+  themes (`next-themes`). Logout clears cached data. `noindex`.
 
 ### 8.4 Accessibility & quality bar
 - WCAG 2.2 AA contrast, full keyboard operation, visible focus, focus trapped in the open chat panel and sheet, `Esc` closes them.

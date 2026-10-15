@@ -35,8 +35,9 @@ inverts to spruce surfaces with a lighter pine.
 - Left-aligned, single column on mobile, generous vertical rhythm. Sections are separated by space and hairline
   rules, not by stacks of identical cards.
 - Numbered markers only for real sequences (the first-visit steps).
-- shadcn/ui (`base-nova`) primitives. One deliberate extension: `Button` sizes `xl` and `icon-xl` give
-  patient-facing primary actions a 44px touch target.
+- shadcn/ui (`base-nova`) primitives. Deliberate extensions: `Button` sizes `xl` and `icon-xl` (44px touch target
+  for patient-facing primary actions) and a `Badge` `accent` variant (sunflower, used for P2 high-value leads).
+- Dashboard priority colors: P1 destructive, P2 accent, P3 primary, P4 secondary. Overdue is the only red text.
 - Chat UI composes `MessageScroller`, `Message`, and `Bubble`.
 
 ## Writing
