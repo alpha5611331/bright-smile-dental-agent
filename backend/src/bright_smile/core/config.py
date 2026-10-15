@@ -23,6 +23,15 @@ class LogLevel(StrEnum):
     ERROR = "ERROR"
 
 
+class ReasoningEffort(StrEnum):
+    """OpenAI reasoning effort. Reasoning tokens count toward the output cap, so chat stays low."""
+
+    MINIMAL = "minimal"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 class Settings(BaseSettings):
     """Validated runtime configuration. See SPEC section 12.1."""
 
@@ -31,10 +40,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         frozen=True,
+        env_parse_none_str="",  # an empty value (e.g. OPENAI_REASONING_EFFORT=) means "unset"
     )
 
     openai_api_key: SecretStr
     openai_model: str = Field(default="gpt-5.4-mini", min_length=1)
+    openai_reasoning_effort: ReasoningEffort | None = ReasoningEffort.LOW
+    openai_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
 
     mongodb_uri: SecretStr
     mongodb_db: str = Field(default="bright_smile", min_length=1, pattern=r"^[A-Za-z0-9_-]+$")
