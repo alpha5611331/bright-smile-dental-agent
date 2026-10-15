@@ -1,7 +1,7 @@
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from bright_smile.core.config import Environment, LogLevel, Settings
+from bright_smile.core.config import Environment, LogLevel, ReasoningEffort, Settings
 from tests.factories import make_settings
 
 
@@ -9,6 +9,7 @@ def test_defaults_are_applied() -> None:
     settings = make_settings()
 
     assert settings.openai_model == "gpt-5.4-mini"
+    assert settings.openai_reasoning_effort is ReasoningEffort.LOW
     assert settings.environment is Environment.DEVELOPMENT
     assert settings.log_level is LogLevel.INFO
     assert settings.trust_proxy_headers is False
@@ -45,6 +46,16 @@ def test_missing_required_values_fail_fast(monkeypatch: pytest.MonkeyPatch) -> N
 
     missing = {str(err["loc"][0]) for err in exc_info.value.errors()}
     assert missing == {"openai_api_key", "mongodb_uri", "session_secret", "staff_password_hash"}
+
+
+def test_empty_reasoning_effort_disables_reasoning(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-env")
+    monkeypatch.setenv("MONGODB_URI", "mongodb://example:27017")
+    monkeypatch.setenv("SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("STAFF_PASSWORD_HASH", "$argon2id$hash")
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT", "")
+
+    assert Settings(_env_file=None).openai_reasoning_effort is None
 
 
 def test_settings_load_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
