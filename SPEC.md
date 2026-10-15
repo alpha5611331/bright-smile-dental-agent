@@ -453,7 +453,7 @@ first `X-Forwarded-For` hop, and only when `TRUST_PROXY_HEADERS=true`.
 |---|---|---|---|
 | Local | `uv run fastapi dev` (:8000) | `pnpm dev` (:3000) | locally installed MongoDB (8.x service) at `mongodb://localhost:27017` |
 | CI | pytest | lint/typecheck/build | `mongo` service container |
-| Production | Render free web service (Docker, official uv image) | Vercel | MongoDB Atlas M0 (least-privilege user, TLS) |
+| Production | Render free web service (native Python runtime with uv, `render.yaml` Blueprint) | Vercel | MongoDB Atlas M0 (least-privilege user, TLS) |
 
 Production notes:
 - **Render free tier sleeps after about 15 minutes without traffic** and takes up to a minute to wake. Before a demo, call

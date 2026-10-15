@@ -1,0 +1,26 @@
+# Render Blueprint for the FastAPI backend (SPEC section 12).
+# Native Python runtime: Render installs uv because backend/uv.lock exists and reads backend/.python-version.
+# Secrets marked `sync: false` are entered in the Render dashboard on first deploy and never committed.
+services:
+  - type: web
+    name: bright-smile-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: uv sync --frozen --no-dev
+    startCommand: uv run --no-sync fastapi run src/bright_smile/main.py --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: STAFF_PASSWORD_HASH
+        sync: false
