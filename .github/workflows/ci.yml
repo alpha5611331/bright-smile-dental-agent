@@ -98,7 +98,7 @@ jobs:
         run: uv run pytest
 
   frontend:
-    name: Frontend (lint, types, format, build, API types)
+    name: Frontend (lint, types, format, tests, build, generated files)
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
