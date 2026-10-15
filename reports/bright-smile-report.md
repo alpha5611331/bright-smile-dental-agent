@@ -174,6 +174,56 @@ improve that moment end to end, from first question to callback, rather than bui
 4. **Built to hand over.** Typed contracts end to end, a written specification, and documentation a
    non-technical operator can follow.
 
+### 5.4 Technology choices
+
+Every choice below was made for the same three reasons: it fits an AI product that streams answers
+and calls tools, it keeps the build fast for a small team, and it leaves the client with something a
+future developer can pick up without a guide.
+
+#### Backend
+
+| Choice | Why | Trade-off accepted |
+| --- | --- | --- |
+| **Python 3.12** | The AI ecosystem is Python-first: LangGraph, the OpenAI SDK and evaluation tooling ship there first and best. Modern typing (`X \| None`, generics, `type` aliases) with `mypy --strict` gives the safety of a typed language without leaving that ecosystem. | Slower raw execution than Go or Node, which does not matter here: the time is spent waiting on the model and the database, not computing. |
+| **FastAPI** | Built on async from the ground up, and generates an OpenAPI schema from the code. That schema is what the frontend's types are generated from, so the API contract is checked at build time, not discovered in the demo. Request validation, dependency injection (used for settings, auth and rate limits) and streaming responses are built in. | A lighter framework than Django: no admin panel or ORM included. Neither is needed; MongoDB and the dashboard cover both. |
+| **Async I/O throughout** | Almost every request waits on something slow: the model streams for several seconds, MongoDB answers over the network. With async, one server process holds many conversations at once while they wait, instead of one thread per chat. That is what makes a single free-tier instance enough, and it keeps token streaming smooth. Password hashing (CPU-bound Argon2) is moved to a thread pool so it never blocks the loop. | Every I/O library must be async (PyMongo async, Beanie, `ainvoke`/`astream`). A blocking call slips in easily, so the project rules forbid them in request paths. |
+| **Pydantic v2** | One model validates the API request, the `capture_lead` tool input and the form, so the chat and the form can never accept different data. It also validates configuration at startup: a missing key stops the app immediately instead of failing on the first patient. | None worth noting; it is FastAPI's native layer. |
+| **Server-sent events over POST** | Replies stream token by token, so the first words appear quickly (the target is under two seconds) instead of after the whole answer. SSE is plain HTTP, passes through proxies and the Next.js rewrite unchanged, and needs no WebSocket server. | One-way only, and a small parser on the client (the browser's `EventSource` cannot POST). Chat never needs server-initiated messages, so one-way is enough. |
+| **uv, ruff, mypy, loguru** | uv installs and locks dependencies in seconds, so CI and onboarding are fast. ruff lints and formats in one tool. mypy `--strict` catches type errors before tests run. loguru gives structured JSON logs with one configuration, and the project rule is that logs never contain message content or personal data. | Newer tools than pip and flake8, but now the common standard for new Python projects. |
+
+#### AI layer
+
+| Choice | Why | Trade-off accepted |
+| --- | --- | --- |
+| **LangGraph** | The conversation is an explicit graph, `guard → agent ⇄ tools`, rather than a loop hidden in a prompt. The deterministic safety guard is its own node that runs before the model on every turn, which is easy to test and impossible for the model to skip. It streams tokens natively and leaves room to add steps later (a human handoff, a voice channel) without a rewrite. | One more dependency than calling the OpenAI SDK directly. Worth it for a control flow that can be read, tested and extended. |
+| **OpenAI `gpt-5.4-mini`, low reasoning, Responses API** | Fast and inexpensive enough for a public chat widget, and reliable at tool calls when reasoning is on. The Responses API is required for tools combined with reasoning on this model (Section 7.3). The model name and reasoning effort are configuration, so a stronger model is a settings change. | A hosted model means patient messages leave the practice's systems, one of the reasons the report flags HIPAA work before real patient data. |
+| **Full KB in the prompt, no vector database** | Covered in Section 5.2: a one-page KB is more accurate in full, and prompt caching makes it cheap. | Revisit if the KB grows past roughly 20 pages. |
+| **Live golden evaluations** | Unit tests with a fake model cannot catch what the real model does. Twelve scenarios run against the real API before a release and check behavior rather than wording, so they survive model updates. The first run caught a defect no other test could (Section 7.3). | A few cents per run, and not run in CI because they need a key. |
+
+#### Data
+
+| Choice | Why | Trade-off accepted |
+| --- | --- | --- |
+| **MongoDB with Beanie** | The data is document-shaped: a conversation is a list of messages that is always read and written whole, and is embedded as one document. A TTL index deletes anonymous chats after 90 days with no cleanup job. Beanie models are Pydantic models, so the database layer uses the same validation as the API. Atlas has a free tier for the demo deployment. | No multi-document transactions are needed in v1. If reporting needs grow, a relational database or a warehouse export would serve analytics better. |
+
+#### Frontend
+
+| Choice | Why | Trade-off accepted |
+| --- | --- | --- |
+| **Next.js 16 (App Router), TypeScript strict** | One framework for both the public website and the staff dashboard. Server components render the marketing page fast and indexable, with JavaScript only where interaction needs it (the chat, the dashboard). Its rewrites put the backend behind the website's own address, so there is no CORS setup, cookies stay first-party and the backend URL is never exposed. Its proxy layer gates `/dashboard` before the page loads. Vercel hosts it with no configuration. | One extra network hop through the rewrite. Negligible next to model latency. |
+| **shadcn/ui** | Accessible, well-tested components (dialogs, sheets, selects, toasts) whose source is copied into the project rather than hidden in a package, so they can be read and adapted, and nothing breaks on a library upgrade. Built on Base UI primitives, which handle focus trapping, keyboard use and screen-reader roles, the parts of accessibility that are easiest to get wrong by hand. It includes chat-specific pieces (message bubbles, a message scroller that follows a streaming reply). | The project owns the component code. That is the intent: the client is not locked to a component vendor. |
+| **Tailwind CSS v4** | Styling lives next to the markup, design tokens (the brand colors, priority colors, light and dark themes) are defined once, and unused styles are never shipped. It is the styling system shadcn/ui is built on. | Long class lists in markup; a formatter keeps them ordered. |
+| **TanStack Query** | Handles the dashboard's server data: caching, refresh every minute and on window focus, and optimistic updates with rollback, so a status change appears instantly and reverts with a message if the save fails. That is a lot of subtle code not written by hand. | One more client library, but the standard one for this job. |
+| **Generated API client** (`openapi-typescript`, `openapi-fetch`) and **zod** | The frontend's types come from the backend's OpenAPI schema; CI fails if they drift. zod mirrors the server's rules in the form for instant feedback, and the server's own errors are mapped back onto the fields. | A generation step after backend schema changes, automated by one command. |
+| **Vitest, ESLint, Prettier** | Fast unit tests for the logic that matters most on the client (the SSE parser, the chat state machine, SLA formatting), plus linting and formatting enforced in CI. | |
+
+#### Hosting and delivery
+
+| Choice | Why | Trade-off accepted |
+| --- | --- | --- |
+| **Render, Vercel, MongoDB Atlas** | Each has a free tier, deploys from Git and needs no server administration, which suits a demo and a small practice. | Render's free tier sleeps after about 15 minutes idle, which the chat covers with a "waking up" message and the demo covers with a warm-up call. A paid tier removes it. |
+| **GitHub Actions with one required check** | Every change is linted, type-checked, tested and built before merge. The client inherits a project that tells the next developer when they have broken something. | |
+
 ## 6. How it was built
 
 ### 6.1 Architecture
