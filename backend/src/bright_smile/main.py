@@ -18,6 +18,8 @@ from bright_smile.api.router import API_PREFIX, api_router
 from bright_smile.core.config import Settings, get_settings
 from bright_smile.core.errors import ErrorResponse, register_error_handlers
 from bright_smile.core.logging import configure_logging
+from bright_smile.core.rate_limit import RateLimiter
+from bright_smile.core.security import SessionSigner
 from bright_smile.db.mongo import create_client, init_db
 
 
@@ -37,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = resolved
         app.state.mongo_client = client
         app.state.agent = build_agent(create_chat_model(resolved), AGENT_TOOLS)
+        app.state.rate_limiter = RateLimiter()
+        app.state.session_signer = SessionSigner(resolved.session_secret)
         try:
             await init_db(client, resolved)
             logger.info("startup_complete", environment=resolved.environment, version=__version__)

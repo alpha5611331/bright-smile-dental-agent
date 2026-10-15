@@ -1,6 +1,5 @@
 import json
 import logging
-from collections.abc import Iterator
 
 import pytest
 from loguru import logger
@@ -9,13 +8,6 @@ from bright_smile.core.config import LogLevel
 from bright_smile.core.logging import configure_logging
 from bright_smile.domain.flags import Flag
 from bright_smile.domain.leads import Priority
-
-
-@pytest.fixture(autouse=True)
-def restore_logging() -> Iterator[None]:
-    """These tests reconfigure the global logger; restore readable logs for the rest of the run."""
-    yield
-    configure_logging(LogLevel.INFO, json_logs=False)
 
 
 def test_json_logs_include_structured_fields(capsys: pytest.CaptureFixture[str]) -> None:
