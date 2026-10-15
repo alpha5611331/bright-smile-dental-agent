@@ -251,3 +251,18 @@ async def test_capture_is_idempotent_per_conversation(
 
     assert "lead_captured" not in [name for name, _ in second]
     assert await Lead.find(Lead.conversation_id == conversation_id).count() == 1
+
+
+async def test_chat_is_rate_limited_per_client(
+    client: AsyncClient, model: ScriptedChatModel
+) -> None:
+    model.replies += ["ok"] * 20
+    for _ in range(20):
+        assert (await chat(client, "Hi")).status_code == 200
+
+    response = await chat(client, "One more")
+
+    assert response.status_code == 429
+    assert response.json()["error"]["code"] == "rate_limited"
+    assert "retry-after" in response.headers
+    assert len(model.calls) == 20

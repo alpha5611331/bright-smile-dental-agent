@@ -7,6 +7,10 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from bright_smile.core.config import Settings
+from bright_smile.core.security import hash_password
+
+STAFF_PASSWORD = "correct horse battery staple"  # noqa: S105  # test-only credential
+_STAFF_PASSWORD_HASH = hash_password(STAFF_PASSWORD)  # hashed once per test session
 
 
 class TestEnv(BaseSettings):
@@ -26,7 +30,7 @@ def make_settings(**overrides: Any) -> Settings:  # noqa: ANN401  # mirrors Sett
         "mongodb_db": f"bright_smile_test_{uuid4().hex[:12]}",
         "mongodb_server_selection_timeout_ms": 2000,
         "session_secret": SecretStr("x" * 32),
-        "staff_password_hash": SecretStr("$argon2id$test"),
+        "staff_password_hash": SecretStr(_STAFF_PASSWORD_HASH),
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)

@@ -45,10 +45,97 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List leads for the front desk */
+        get: operations["leads-list_leads"];
         put?: never;
         /** Submit an appointment request from the form fallback */
         post: operations["leads-post_lead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lead details with the chat transcript */
+        get: operations["leads-get_lead"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a lead's status or notes */
+        patch: operations["leads-patch_lead"];
+        trace?: never;
+    };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Front-desk stat cards */
+        get: operations["stats-get_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log in with the staff password and receive a session cookie */
+        post: operations["auth-login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End the staff session */
+        post: operations["auth-logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check whether the staff session is valid */
+        get: operations["auth-me"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -91,6 +178,11 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
+        /**
+         * Flag
+         * @enum {string}
+         */
+        Flag: "emergency" | "medical_question";
         /** HealthResponse */
         HealthResponse: {
             status: components["schemas"]["ServiceStatus"];
@@ -152,6 +244,175 @@ export interface components {
             id: string;
             priority: components["schemas"]["Priority"];
         };
+        /** LeadDetail */
+        LeadDetail: {
+            /** Id */
+            id: string;
+            /** Conversation Id */
+            conversation_id: string | null;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /** Email */
+            email: string;
+            /** Reason */
+            reason: string;
+            preferred_location: components["schemas"]["PreferredLocation"];
+            patient_type: components["schemas"]["PatientType"];
+            interest: components["schemas"]["Interest"];
+            priority: components["schemas"]["Priority"];
+            status: components["schemas"]["LeadStatus"];
+            source: components["schemas"]["LeadSource"];
+            /** After Hours */
+            after_hours: boolean;
+            /** Notes */
+            notes: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Sla Due At
+             * Format: date-time
+             */
+            sla_due_at: string;
+            /** Contacted At */
+            contacted_at: string | null;
+            /**
+             * Overdue
+             * @description Still `new` after its SLA deadline
+             */
+            overdue: boolean;
+            /** Flags */
+            flags: components["schemas"]["Flag"][];
+            /** Transcript */
+            transcript: components["schemas"]["TranscriptMessage"][];
+        };
+        /** LeadOut */
+        LeadOut: {
+            /** Id */
+            id: string;
+            /** Conversation Id */
+            conversation_id: string | null;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /** Email */
+            email: string;
+            /** Reason */
+            reason: string;
+            preferred_location: components["schemas"]["PreferredLocation"];
+            patient_type: components["schemas"]["PatientType"];
+            interest: components["schemas"]["Interest"];
+            priority: components["schemas"]["Priority"];
+            status: components["schemas"]["LeadStatus"];
+            source: components["schemas"]["LeadSource"];
+            /** After Hours */
+            after_hours: boolean;
+            /** Notes */
+            notes: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Sla Due At
+             * Format: date-time
+             */
+            sla_due_at: string;
+            /** Contacted At */
+            contacted_at: string | null;
+            /**
+             * Overdue
+             * @description Still `new` after its SLA deadline
+             */
+            overdue: boolean;
+        };
+        /** LeadPage */
+        LeadPage: {
+            /** Items */
+            items: components["schemas"]["LeadOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * LeadSort
+         * @enum {string}
+         */
+        LeadSort: "priority" | "newest" | "oldest";
+        /**
+         * LeadSource
+         * @enum {string}
+         */
+        LeadSource: "chat" | "form";
+        /** LeadStats */
+        LeadStats: {
+            /**
+             * New Today
+             * @description Leads created today (practice time)
+             */
+            new_today: number;
+            /**
+             * Overdue
+             * @description Leads still `new` after their SLA deadline
+             */
+            overdue: number;
+            /**
+             * Open High Value
+             * @description Open P2 leads (Invisalign, implants, crowns)
+             */
+            open_high_value: number;
+            /**
+             * After Hours Share
+             * @description Share of all leads captured while both offices were closed
+             */
+            after_hours_share: number;
+        };
+        /**
+         * LeadStatus
+         * @enum {string}
+         */
+        LeadStatus: "new" | "contacted" | "scheduled" | "not_interested";
+        /**
+         * LeadUpdate
+         * @description Staff edits. Omitted fields are left unchanged.
+         */
+        LeadUpdate: {
+            status?: components["schemas"]["LeadStatus"] | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** LoginRequest */
+        LoginRequest: {
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+        };
+        /**
+         * MessageRole
+         * @enum {string}
+         */
+        MessageRole: "user" | "assistant";
         /**
          * PatientType
          * @enum {string}
@@ -173,6 +434,17 @@ export interface components {
          * @enum {string}
          */
         ServiceStatus: "ok" | "degraded";
+        /** TranscriptMessage */
+        TranscriptMessage: {
+            role: components["schemas"]["MessageRole"];
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** ValidationIssue */
         ValidationIssue: {
             /** Loc */
@@ -251,7 +523,7 @@ export interface operations {
                     "text/event-stream": unknown;
                 };
             };
-            /** @description Unknown or expired id */
+            /** @description Not Found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -260,8 +532,17 @@ export interface operations {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Turn limit reached */
+            /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -276,6 +557,60 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "leads-list_leads": {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LeadStatus"][] | null;
+                priority?: components["schemas"]["Priority"][] | null;
+                location?: components["schemas"]["PreferredLocation"] | null;
+                sort?: components["schemas"]["LeadSort"];
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadPage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -300,6 +635,267 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeadCreated"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "leads-get_lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "leads-patch_lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "stats-get_stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadStats"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "auth-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "auth-logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "auth-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Error */

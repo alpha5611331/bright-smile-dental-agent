@@ -9,10 +9,12 @@ requires-python = ">=3.12"
 dependencies = [
     "beanie>=2.2.0",
     "fastapi[standard]>=0.143.1",
+    "itsdangerous>=2.2.0",
     "langchain-openai>=1.7.2",
     "langgraph>=1.2.15",
     "loguru>=0.7.3",
     "phonenumbers>=9.0.41",
+    "pwdlib[argon2]>=0.3.1",
     "pydantic-extra-types>=2.11.1",
     "pydantic-settings>=2.16.0",
     "pydantic[email]>=2.14.1",

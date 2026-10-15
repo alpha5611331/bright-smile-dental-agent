@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from enum import StrEnum
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -126,3 +127,11 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, _validation_error_handler)
     app.add_exception_handler(StarletteHTTPException, _http_error_handler)
     app.add_exception_handler(Exception, _unhandled_error_handler)
+
+
+def error_responses(*status_codes: int) -> dict[int | str, dict[str, Any]]:
+    """OpenAPI `responses=` entries documenting the shared error body for the given statuses."""
+    return {
+        code: {"model": ErrorResponse, "description": HTTPStatus(code).phrase}
+        for code in status_codes
+    }

@@ -250,10 +250,10 @@ Base path `/api`. JSON uses `snake_case`. The frontend calls it **same-origin** 
 | `GET /api/health` | public | liveness + DB ping → `{status: "ok", db: "ok"}` |
 | `POST /api/chat` | public (rate-limited) | send a message, receive an SSE stream (§7.2) |
 | `POST /api/leads` | public (rate-limited) | form-fallback lead creation → `201 {id, priority}` |
-| `GET /api/leads` | staff | `?status&priority&location&page=1&page_size=25&sort=-created_at` → `Page[LeadOut]` |
+| `GET /api/leads` | staff | `?status&priority` (repeatable), `&location&sort=priority\|newest\|oldest&page=1&page_size=25` (max 100) → `LeadPage {items, total, page, page_size}` |
 | `GET /api/leads/{id}` | staff | `LeadDetail` (lead + transcript + flags) |
 | `PATCH /api/leads/{id}` | staff | `{status?, notes?}` → `LeadOut` |
-| `GET /api/stats` | staff | `{new_today, overdue, open_high_value, after_hours_share}` |
+| `GET /api/stats` | staff | `{new_today, overdue, open_high_value, after_hours_share}`: leads created today (practice time), `new` past SLA, open (`new`/`contacted`) P2 leads, and the all-time share captured after hours (0 to 1) |
 | `POST /api/auth/login` | public (rate-limited) | `{password}` → `204` + session cookie |
 | `POST /api/auth/logout` | staff | `204`, clears cookie |
 | `GET /api/auth/me` | staff | `204` if the session is valid, otherwise `401` |
@@ -289,7 +289,9 @@ Codes: `validation_error` (422), `unauthorized` (401), `not_found` (404), `rate_
 ### 7.4 Auth
 - `STAFF_PASSWORD_HASH` (Argon2) in env. Login compares the submitted password against it in constant time.
 - The session is a signed, timestamped cookie (`bs_session`): `HttpOnly`, `Secure` (prod), `SameSite=Lax`, `Path=/`, 12 h max age.
-- State-changing endpoints require `Content-Type: application/json`. Together with `SameSite=Lax`, this provides CSRF protection.
+- State-changing endpoints accept only `application/json` bodies (anything else is rejected with `422`). Together with
+  `SameSite=Lax`, this blocks cross-site form posts (CSRF). Password checks run in a thread pool so Argon2 never blocks the
+  event loop.
 
 ---
 
