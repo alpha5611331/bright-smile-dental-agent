@@ -2,9 +2,10 @@
 
 from fastapi import APIRouter
 
-from bright_smile.api.routes import health
+from bright_smile.api.routes import chat, health
 
 API_PREFIX = "/api"
 
 api_router = APIRouter(prefix=API_PREFIX)
 api_router.include_router(health.router)
+api_router.include_router(chat.router)
