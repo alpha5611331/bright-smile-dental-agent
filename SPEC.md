@@ -272,7 +272,11 @@ Events, in order:
 | `error` | `{code, message}` | recoverable or terminal error. The stream then ends. |
 | `done` | `{}` | always last on success |
 
+Every `data` payload also carries a `type` field equal to its event name, so clients can parse data lines alone.
 The client consumes the stream with `fetch` + `ReadableStream`, not `EventSource`, because the request is a POST.
+An unknown or expired `conversation_id` returns `404 not_found` before the stream starts. The client then starts a
+new conversation. Lookup and limit checks run in a dependency, so they produce real status codes. Failures after
+the stream has started are reported as an `error` event.
 
 ### 7.3 Errors
 All non-2xx JSON responses use this shape:
@@ -381,7 +385,7 @@ flowchart LR
 | Login rate limit | 5 attempts / 15 min / client IP |
 | Message length | 1–1000 characters |
 | Conversation length | 30 user turns, then `conversation_limit` |
-| LLM output | `max_tokens` capped (≈ 600). Requests time out after 30 s. |
+| LLM output | `max_tokens` 1200 per call, including reasoning tokens, with reasoning effort `low` by default. Requests time out after 30 s with 2 retries. |
 
 The limiter is in-memory, which works for one backend instance (a documented v1 limitation). It uses the client IP from the
 first `X-Forwarded-For` hop, and only when `TRUST_PROXY_HEADERS=true`.
@@ -449,6 +453,8 @@ cached `get_settings()` and injected as a FastAPI dependency, which tests overri
 |---|---|---|---|
 | `OPENAI_API_KEY` | ✅ | none | OpenAI API key |
 | `OPENAI_MODEL` | | `gpt-5.4-mini` | chat model |
+| `OPENAI_REASONING_EFFORT` | | `low` | `minimal` \| `low` \| `medium` \| `high`, or empty for models without reasoning |
+| `OPENAI_TIMEOUT_SECONDS` | | `30` | per-request timeout for the LLM call |
 | `MONGODB_URI` | ✅ | none | MongoDB connection string (local: `mongodb://localhost:27017`) |
 | `MONGODB_DB` | | `bright_smile` | database name |
 | `MONGODB_SERVER_SELECTION_TIMEOUT_MS` | | `5000` | how long a MongoDB call waits for a reachable server |

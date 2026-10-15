@@ -19,9 +19,9 @@ backend/        FastAPI (async) + LangGraph agent + Beanie/MongoDB. Python, mana
                     routes/<resource>.py (thin HTTP handlers, no business logic)
     schemas/        Pydantic request/response models, one module per resource
     db/             mongo.py (client lifecycle), documents/ (Beanie documents)
-    domain/         pure business rules: priority, SLA, after-hours (no I/O)
+    domain/         pure business rules and vocabulary: flags, priority, SLA, after-hours (no I/O)
     services/       use cases that orchestrate db + domain (called by routes and agent tools)
-    agent/          kb.py (only fact source), prompts, guard, tools, LangGraph graph
+    agent/          kb.py (only fact source), prompts.py, guard.py, llm.py (ChatOpenAI), graph.py, tools
   tests/            unit/ (pure, no I/O) · api/ (httpx + MongoDB) · evals/ (marker `eval`, real API)
 frontend/       Next.js 16 (App Router, TS strict, Cache Components) + shadcn/ui (base-nova). pnpm. See frontend/CLAUDE.md.
 .github/        CI (`ci-ok` is the required merge check), issue/PR templates
