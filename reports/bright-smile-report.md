@@ -200,6 +200,48 @@ future developer can pick up without a guide.
 | **Full KB in the prompt, no vector database** | Covered in Section 5.2: a one-page KB is more accurate in full, and prompt caching makes it cheap. | Revisit if the KB grows past roughly 20 pages. |
 | **Live golden evaluations** | Unit tests with a fake model cannot catch what the real model does. Twelve scenarios run against the real API before a release and check behavior rather than wording, so they survive model updates. The first run caught a defect no other test could (Section 7.3). | A few cents per run, and not run in CI because they need a key. |
 
+#### Why LangGraph
+
+The assistant has to do more than answer. On every turn it must run a safety check the model cannot
+skip, decide whether to call a tool, save a request, recover from invalid input, and stream its
+reply word by word. LangGraph expresses exactly that as a small graph, with each step a plain,
+testable function.
+
+```
+START → guard → agent ⇄ tools → END
+```
+
+**What it gives this project, concretely**
+
+| Need | How LangGraph meets it |
+| --- | --- |
+| **A safety step the model cannot bypass** | The `guard` node is deterministic Python that runs before the model on every turn. It records emergency or medical flags in the graph's state, and the `agent` node reads them to add the required instruction for that turn. Safety is part of the control flow, not a sentence in a prompt the model may or may not follow. |
+| **Explicit state** | The state is typed: the message history plus the safety flags. Each node returns only what it changes, so it is always clear which step set what. |
+| **A tool loop with recovery** | A conditional edge sends the model's tool calls to the `tools` node, which runs `capture_lead` and returns the result to the model. When the patient's details fail validation, the error goes back to the model and it asks again, with no custom retry code. |
+| **Streaming** | The graph streams the model's tokens as they are produced, and the API relays them to the browser as server-sent events. |
+| **Prompt caching preserved** | Turn-specific safety instructions are inserted next to the latest message, after the fixed knowledge-base prompt, so the long prefix stays identical on every request and OpenAI's cache keeps applying. |
+| **Testable without the real model** | The model is passed into the graph, so unit tests run the real graph with a fake model: routing, flags and the tool loop are tested in CI in milliseconds and for free. The live evaluations then test the real model through the same graph. |
+| **Provider independence** | The model is a LangChain chat model. Moving to a different OpenAI model is configuration, and moving to another provider (Claude, for example) is a change at one point, not a rewrite of the agent. |
+
+**Alternatives considered**
+
+| Alternative | Why not here |
+| --- | --- |
+| **A hand-written loop on the OpenAI SDK** | Fewer dependencies, but the guard, the routing, tool execution, error feedback and streaming would all be custom code to write, test and maintain, and the control flow would be harder for the next developer to see. |
+| **A prebuilt "agent" abstraction** (LangChain agents, OpenAI Agents SDK) | Quick to start, but the loop is hidden inside the library. Putting a mandatory deterministic step before every model call means working around the abstraction rather than with it. |
+| **Multi-agent frameworks** (CrewAI, AutoGen) | Built for several agents collaborating. One assistant with one tool does not need that, and the extra model calls would add cost and latency to a public chat. |
+| **No-code automation** (n8n, Make, Zapier) | Good for back-office workflows, but not for a token-streaming chat with strict, unit-tested safety rules, version control and a typed API contract. They remain a good fit for downstream steps, such as pushing a captured request into a CRM. |
+
+**Where it pays off next**
+
+The graph is the place where the roadmap features attach without a rewrite: a node that hands an
+urgent conversation to staff, a pause for human approval before an action (LangGraph supports
+interrupts and checkpointing), or a second entry point for a voice channel that reuses the same
+guard, tool and rules.
+
+**Trade-off accepted:** one more dependency and a framework to learn, in exchange for a control flow
+that can be read on one screen, tested without the model, and extended safely.
+
 #### Data
 
 | Choice | Why | Trade-off accepted |
