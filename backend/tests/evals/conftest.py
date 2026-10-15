@@ -6,6 +6,7 @@ local MongoDB. Without a usable key every eval is skipped, never failed.
 
 import json
 from collections.abc import AsyncIterator, Callable, Coroutine
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pymongo import AsyncMongoClient
 
+from bright_smile.core.rate_limit import Policy, RateLimit
 from bright_smile.main import create_app
 from tests.factories import make_settings
 
@@ -53,7 +55,10 @@ async def live_client(eval_env: EvalEnv) -> AsyncIterator[AsyncClient]:
         LifespanManager(app),
         AsyncClient(transport=ASGITransport(app=app), base_url="http://eval", timeout=90) as http,
     ):
-        app.state.rate_limiter.policies = {}  # evals are not traffic; never rate limit them
+        # Evals are not real traffic: lift the limits instead of hitting 429s mid-suite.
+        app.state.rate_limiter.policies = dict.fromkeys(
+            Policy, RateLimit(10_000, timedelta(minutes=1))
+        )
         yield http
     cleanup: AsyncMongoClient[dict[str, Any]] = AsyncMongoClient(
         settings.mongodb_uri.get_secret_value()
