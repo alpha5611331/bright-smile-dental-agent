@@ -122,10 +122,10 @@ jobs:
           cache-dependency-glob: backend/uv.lock
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: API schema and types are up to date
-        run: |
-          uv run --directory ../backend --locked python -m bright_smile.cli export-openapi
-          pnpm check:api
+      - name: Generated files are up to date (OpenAPI schema, API types, KB content)
+        run: pnpm check:api
+      - name: Unit tests
+        run: pnpm test
       - name: ESLint
         run: pnpm lint
       - name: Typecheck
