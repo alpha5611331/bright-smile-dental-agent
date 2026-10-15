@@ -1,0 +1,16 @@
+{
+  "name": "bright-smile-video-recorder",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Not part of the product. Records the demo videos against a local instance of the app; output goes to reports/videos.",
+  "type": "module",
+  "scripts": {
+    "install-browser": "playwright install chromium",
+    "seed": "uv run --directory ../../backend python ../scripts/videos/seed.py",
+    "dry-run": "node run.mjs",
+    "record": "node run.mjs --record"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  }
+}
