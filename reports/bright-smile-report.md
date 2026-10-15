@@ -3,8 +3,7 @@
 - **Client:** Bright Smile Dental (fictional customer), for Solender Media
 - **Engagement:** 24-hour practical exercise, followed by a 30-minute presentation and live demo
 - **Report date:** 2026-10-14
-- **Prepared by:** Kevin Kamto (kevin.kamto.us@outlook.com)
-- **Repository:** `kevinkamto/bright-smile-dental-agent`
+- **Prepared by:** Kevin Kamto
 - **Status:** **Feature-complete v1.0 MVP, verified locally.** Production hosting is designed and
   tracked (Section 10).
 
