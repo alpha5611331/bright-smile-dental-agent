@@ -99,8 +99,7 @@ KB = KnowledgeBase(
             hours=(
                 "Monday to Thursday: 8:00 AM to 5:00 PM",
                 "Friday: 8:00 AM to 3:00 PM",
-                "Saturday: open in the morning "
-                "(exact hours conflict in the source; see known issues)",
+                "Saturday: mornings (please call to confirm exact hours)",
             ),
         ),
         Location(

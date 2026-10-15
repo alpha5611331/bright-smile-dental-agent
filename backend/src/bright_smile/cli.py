@@ -7,13 +7,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from bright_smile.agent.kb import KB
 from bright_smile.core.config import Environment, LogLevel, Settings
 from bright_smile.core.security import hash_password
 from bright_smile.main import create_app
 
 MIN_PASSWORD_LENGTH = 12
 
-DEFAULT_OPENAPI_PATH = Path(__file__).resolve().parents[3] / "frontend" / "openapi.json"
+FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"
+DEFAULT_OPENAPI_PATH = FRONTEND_DIR / "openapi.json"
+DEFAULT_KB_PATH = FRONTEND_DIR / "src" / "content" / "kb.json"
 
 
 def build_openapi_schema() -> dict[str, Any]:
@@ -28,13 +31,20 @@ def build_openapi_schema() -> dict[str, Any]:
     return create_app(settings).openapi()
 
 
-def export_openapi(output: Path) -> None:
+def _write_json(output: Path, data: object) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        json.dumps(build_openapi_schema(), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-        newline="\n",
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
     )
+
+
+def export_openapi(output: Path) -> None:
+    _write_json(output, build_openapi_schema())
+
+
+def export_kb(output: Path) -> None:
+    """Write the knowledge base for the marketing site: page copy and the bot share one source."""
+    _write_json(output, KB.model_dump(mode="json"))
 
 
 def read_new_password(*, from_stdin: bool) -> str:
@@ -59,6 +69,9 @@ def main(argv: list[str] | None = None) -> None:
     export = commands.add_parser("export-openapi", help="write the OpenAPI schema for the frontend")
     export.add_argument("--output", type=Path, default=DEFAULT_OPENAPI_PATH)
 
+    kb_cmd = commands.add_parser("export-kb", help="write the knowledge base JSON for the frontend")
+    kb_cmd.add_argument("--output", type=Path, default=DEFAULT_KB_PATH)
+
     hash_cmd = commands.add_parser(
         "hash-password", help="print an Argon2 hash for STAFF_PASSWORD_HASH"
     )
@@ -69,6 +82,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if args.command == "export-openapi":
         export_openapi(args.output)
+    elif args.command == "export-kb":
+        export_kb(args.output)
     elif args.command == "hash-password":
         print(hash_password(read_new_password(from_stdin=args.stdin)))  # noqa: T201  # CLI output
 
