@@ -65,9 +65,43 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Server-Sent Events; each `data` line is one of these payloads",
             "content": {
               "text/event-stream": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ConversationEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FlagEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TokenEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LeadCapturedEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DoneEvent"
+                    }
+                  ],
+                  "title": "Response 200 Chat-Post Chat",
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "conversation": "#/components/schemas/ConversationEvent",
+                      "flag": "#/components/schemas/FlagEvent",
+                      "token": "#/components/schemas/TokenEvent",
+                      "lead_captured": "#/components/schemas/LeadCapturedEvent",
+                      "error": "#/components/schemas/ErrorEvent",
+                      "done": "#/components/schemas/DoneEvent"
+                    }
+                  }
+                },
                 "itemSchema": {
                   "type": "object",
                   "properties": {
@@ -636,6 +670,26 @@
         ],
         "title": "ChatRequest"
       },
+      "ConversationEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "conversation",
+            "title": "Type",
+            "default": "conversation"
+          },
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "ConversationEvent"
+      },
       "DependencyStatus": {
         "type": "string",
         "enum": [
@@ -643,6 +697,18 @@
           "unavailable"
         ],
         "title": "DependencyStatus"
+      },
+      "DoneEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "done",
+            "title": "Type",
+            "default": "done"
+          }
+        },
+        "type": "object",
+        "title": "DoneEvent"
       },
       "ErrorBody": {
         "properties": {
@@ -682,6 +748,29 @@
         ],
         "title": "ErrorCode"
       },
+      "ErrorEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "error",
+            "title": "Type",
+            "default": "error"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorEvent"
+      },
       "ErrorResponse": {
         "properties": {
           "error": {
@@ -701,6 +790,24 @@
           "medical_question"
         ],
         "title": "Flag"
+      },
+      "FlagEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "flag",
+            "title": "Type",
+            "default": "flag"
+          },
+          "flag": {
+            "$ref": "#/components/schemas/Flag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag"
+        ],
+        "title": "FlagEvent"
       },
       "HealthResponse": {
         "properties": {
@@ -733,6 +840,29 @@
           "other"
         ],
         "title": "Interest"
+      },
+      "LeadCapturedEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "lead_captured",
+            "title": "Type",
+            "default": "lead_captured"
+          },
+          "lead_id": {
+            "type": "string",
+            "title": "Lead Id"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_id",
+          "priority"
+        ],
+        "title": "LeadCapturedEvent"
       },
       "LeadCreate": {
         "properties": {
@@ -1252,6 +1382,25 @@
           "degraded"
         ],
         "title": "ServiceStatus"
+      },
+      "TokenEvent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "token",
+            "title": "Type",
+            "default": "token"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TokenEvent"
       },
       "TranscriptMessage": {
         "properties": {

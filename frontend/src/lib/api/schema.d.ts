@@ -156,11 +156,32 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** ConversationEvent */
+        ConversationEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conversation";
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+        };
         /**
          * DependencyStatus
          * @enum {string}
          */
         DependencyStatus: "ok" | "unavailable";
+        /** DoneEvent */
+        DoneEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "done";
+        };
         /** ErrorBody */
         ErrorBody: {
             code: components["schemas"]["ErrorCode"];
@@ -174,6 +195,17 @@ export interface components {
          * @enum {string}
          */
         ErrorCode: "validation_error" | "unauthorized" | "not_found" | "rate_limited" | "conversation_limit" | "upstream_unavailable" | "internal_error";
+        /** ErrorEvent */
+        ErrorEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "error";
+            code: components["schemas"]["ErrorCode"];
+            /** Message */
+            message: string;
+        };
         /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
@@ -183,6 +215,15 @@ export interface components {
          * @enum {string}
          */
         Flag: "emergency" | "medical_question";
+        /** FlagEvent */
+        FlagEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "flag";
+            flag: components["schemas"]["Flag"];
+        };
         /** HealthResponse */
         HealthResponse: {
             status: components["schemas"]["ServiceStatus"];
@@ -193,6 +234,17 @@ export interface components {
          * @enum {string}
          */
         Interest: "new_patient_exam" | "cleaning" | "filling" | "crown" | "whitening" | "invisalign" | "implant" | "emergency" | "insurance_question" | "other";
+        /** LeadCapturedEvent */
+        LeadCapturedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "lead_captured";
+            /** Lead Id */
+            lead_id: string;
+            priority: components["schemas"]["Priority"];
+        };
         /**
          * LeadCreate
          * @description A validated appointment request.
@@ -434,6 +486,16 @@ export interface components {
          * @enum {string}
          */
         ServiceStatus: "ok" | "degraded";
+        /** TokenEvent */
+        TokenEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "token";
+            /** Text */
+            text: string;
+        };
         /** TranscriptMessage */
         TranscriptMessage: {
             role: components["schemas"]["MessageRole"];
@@ -514,13 +576,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description Server-Sent Events; each `data` line is one of these payloads */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": unknown;
+                    "text/event-stream": components["schemas"]["ConversationEvent"] | components["schemas"]["FlagEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["LeadCapturedEvent"] | components["schemas"]["ErrorEvent"] | components["schemas"]["DoneEvent"];
                 };
             };
             /** @description Not Found */
