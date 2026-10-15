@@ -278,12 +278,12 @@ export interface components {
              * @description new or existing patient, if known
              * @default unknown
              */
-            patient_type: components["schemas"]["PatientType"];
+            patient_type?: components["schemas"]["PatientType"];
             /**
              * @description Closest match to what the visitor wants
              * @default other
              */
-            interest: components["schemas"]["Interest"];
+            interest?: components["schemas"]["Interest"];
             /**
              * Contact Consent
              * @description True only if the visitor explicitly agreed to be contacted
