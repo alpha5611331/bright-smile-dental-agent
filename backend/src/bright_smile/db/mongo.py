@@ -7,12 +7,13 @@ from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
 from bright_smile.core.config import Settings
+from bright_smile.db.documents.conversation import Conversation
 
 # PyMongo types documents as dict[str, Any]; Beanie models provide the typed layer on top.
 type MongoClient = AsyncMongoClient[dict[str, Any]]
 
 # Beanie document models are registered here as they are introduced (SPEC section 6).
-DOCUMENT_MODELS: list[type[Document]] = []
+DOCUMENT_MODELS: list[type[Document]] = [Conversation]
 
 
 def create_client(settings: Settings) -> MongoClient:
