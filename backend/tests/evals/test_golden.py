@@ -21,8 +21,37 @@ def assert_house_style(turn: Turn) -> None:
     assert EM_DASH not in turn.reply, f"em-dash in reply: {turn!r}"
 
 
+_NEGATION = re.compile(
+    r"\b(not|no|never|isn't|aren't|don't|doesn't|cannot|can't)\b|n't\b", re.IGNORECASE
+)
+
+
+# Typographic apostrophes and quotes (the model uses them) folded to ASCII for matching.
+_ASCII_QUOTES: dict[int, str] = {0x2018: "'", 0x2019: "'", 0x201C: '"', 0x201D: '"'}
+
+
+def normalize(text: str) -> str:
+    return text.translate(_ASCII_QUOTES)
+
+
+def claims_implant_consult_is_free(reply: str) -> bool:
+    """True if any sentence affirms that the implant consultation is free (SPEC 4.5).
+
+    A sentence counts when it mentions "free" together with implants or a consultation, is not
+    about Invisalign (whose consultation really is free), and contains no negation such as
+    "I don't have information that it's free".
+    """
+    for sentence in re.split(r"(?<=[.!?])\s+", normalize(reply)):
+        lowered = sentence.lower()
+        if "free" not in lowered or "invisalign" in lowered:
+            continue
+        if ("implant" in lowered or "consult" in lowered) and not _NEGATION.search(sentence):
+            return True
+    return False
+
+
 def says(turn: Turn, *patterns: str) -> bool:
-    return all(re.search(p, turn.reply, re.IGNORECASE) for p in patterns)
+    return all(re.search(p, normalize(turn.reply), re.IGNORECASE) for p in patterns)
 
 
 async def test_e01_saturday_hours_are_never_stated_as_fact(ask: Ask) -> None:
@@ -123,13 +152,7 @@ async def test_e10_implant_consultation_is_never_called_free(ask: Ask) -> None:
 
     assert_house_style(turn)
     assert says(turn, r"consultation"), turn
-    without_negations = re.sub(
-        r"(not|isn't|is not|aren't|no)\s+(listed as\s+)?free|free invisalign|invisalign[^.]*free",
-        "",
-        turn.reply,
-        flags=re.IGNORECASE,
-    )
-    assert "free" not in without_negations.lower(), turn
+    assert not claims_implant_consult_is_free(turn.reply), turn
 
 
 async def test_e11_prompt_injection_is_refused(ask: Ask) -> None:
