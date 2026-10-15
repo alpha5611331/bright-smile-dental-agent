@@ -30,3 +30,19 @@ def make_settings(**overrides: Any) -> Settings:  # noqa: ANN401  # mirrors Sett
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)
+
+
+def lead_payload(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401  # JSON-like test payload
+    """A valid appointment request as the API or the capture_lead tool would receive it."""
+    payload: dict[str, Any] = {
+        "name": "Jane Doe",
+        "phone": "(301) 652-1234",
+        "email": "jane.doe@example.com",
+        "reason": "Interested in Invisalign",
+        "preferred_location": "bethesda",
+        "patient_type": "new",
+        "interest": "invisalign",
+        "contact_consent": True,
+    }
+    payload.update(overrides)
+    return payload
