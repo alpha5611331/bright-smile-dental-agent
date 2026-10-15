@@ -120,7 +120,7 @@ KB = KnowledgeBase(
         ),
         not_accepted=("Medicaid", "HMO plans"),
         out_of_network=(
-            "For out-of-network plans, the practice provides a superbill patients can submit "
+            "For out-of-network plans, we provide a superbill you can submit to your insurer "
             "for reimbursement."
         ),
         membership=MembershipPlan(
@@ -146,8 +146,8 @@ KB = KnowledgeBase(
     ),
     new_patient_process=(
         "Book by phone at (301) 555-0148 or request an appointment through the website or chatbot.",
-        "The practice collects name, phone, email, reason for visit, and preferred location, then "
-        "the front desk calls within one business day to schedule.",
+        "Share your name, phone, email, reason for visit, and preferred location. The front desk "
+        "calls you within one business day to schedule.",
         "Bring a photo ID, your insurance card, and a list of current medications to your first "
         "visit.",
         "Arrive 15 minutes early to complete intake forms, or complete them online in advance.",
