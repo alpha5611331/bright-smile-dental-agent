@@ -4,8 +4,7 @@
 - **Engagement:** 24-hour practical exercise, followed by a 30-minute presentation and live demo
 - **Report date:** 2026-10-14
 - **Prepared by:** Kevin Kamto
-- **Status:** **Feature-complete v1.0 MVP, verified locally.** Production hosting is designed and
-  tracked (Section 10).
+- **Status:** **Feature-complete v1.0 MVP, verified locally.**
 
 ## 1. Executive summary
 
@@ -397,14 +396,15 @@ Saturday mornings" and ask patients to call. Fixing it is a one-line change to t
 
 ## 10. Next steps
 
+**Integrate SonarQube.** Add SonarQube Cloud analysis to CI, so every pull request gets an
+independent check of code quality, security and test coverage on top of the existing gates.
+
 | Step | Value |
 | --- | --- |
-| **Deploy** to Render, Vercel and MongoDB Atlas (issue #13), with an operations guide for the practice | A live link for the practice and for Solender Media |
-| **Measure** the after-hours share and the conversion rate for four weeks | Replace the illustrative numbers in Section 4.1 with real ones |
-| **SMS or email confirmation** when a request is captured, and a reminder to staff when a callback is close to overdue | Faster callbacks, fewer missed deadlines |
-| **Scheduling or CRM integration** | Offer real appointment slots, and write requests straight into the practice's system |
-| **Voice channel** on the same backend | Answer the phone after hours with the same knowledge base, rules and queue |
-| **HIPAA readiness**: business associate agreements, per-user accounts, audit log, retention policy | Required before real patient data |
+| **Analyze both codebases** (Python backend, TypeScript frontend) on every pull request and on `main` | Bugs, vulnerabilities, security hotspots and code smells caught before merge |
+| **Report test coverage** from pytest (`pytest-cov`) and Vitest to SonarQube | Coverage measured per change, not guessed |
+| **Make the Quality Gate a required check** alongside `ci-ok` | No new issues, coverage and duplication thresholds on new code, enforced before merge |
+| **Publish the dashboard** to the client | An outside, ongoing view of the codebase's health that a non-technical team can read |
 
 ## Appendix A. Running it locally
 
