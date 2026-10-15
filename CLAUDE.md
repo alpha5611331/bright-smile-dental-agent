@@ -45,8 +45,9 @@ uv run python -m bright_smile.cli hash-password    # STAFF_PASSWORD_HASH
 Frontend (run in `frontend/`):
 ```bash
 pnpm install
-pnpm dev | pnpm lint | pnpm typecheck | pnpm format | pnpm build
-pnpm gen:api                             # openapi.json -> src/lib/api/schema.d.ts (check:api fails on drift)
+pnpm dev | pnpm lint | pnpm typecheck | pnpm format | pnpm test | pnpm build
+pnpm gen:openapi && pnpm gen:kb && pnpm gen:api   # regenerate openapi.json, kb.json, schema.d.ts
+pnpm check:api                           # same, and fail if anything changed (CI runs this)
 pnpm dlx shadcn@latest add <component>   # add UI components via the CLI only
 ```
 Local MongoDB: the locally installed MongoDB service at `mongodb://localhost:27017` (no Docker for local dev).

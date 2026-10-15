@@ -307,13 +307,21 @@ Next.js (App Router, TypeScript strict) + shadcn/ui (Tailwind v4). Server compon
 | `/dashboard` | Lead table + stat cards + lead detail sheet (protected) |
 
 ### 8.2 Chat widget
-- Floating launcher (bottom-right) → panel. On mobile (< 640 px) the panel is full-screen.
-- Greeting + quick-reply chips: *Book a visit · Insurance · Hours & locations · Pricing · Emergency*.
-- Streaming assistant messages with a typing indicator. Auto-scroll that pauses when the user scrolls up.
-- Persistent footer: *"AI assistant · not medical advice · emergencies: call (301) 555-0148 or go to the nearest ER"*.
-- Inline lead-capture confirmation card on `lead_captured`. The *"Prefer a form?"* link opens the form fallback (shadcn Form + zod, mirroring the server validation).
-- `conversation_id` is kept in `sessionStorage`, so a refresh continues the chat and a new tab starts a fresh one.
-- States: idle, streaming, error with *Retry*, rate-limited (shows the wait time), conversation limit reached (prompts to call).
+- Floating launcher (bottom-right) opens a modal panel (focus trapped, `Esc` closes). On mobile (< 640 px) the panel
+  is full-screen. Buttons on the page (hero questions, offers, "Request a visit") open the panel and send their question.
+- Greeting + quick replies: *Book a visit*, *Insurance*, *Hours and locations*, *Pricing*, *Emergency*.
+- Streaming assistant messages with a waiting indicator. If no event arrives within 5 s, the indicator says the
+  assistant is waking up (Render free tier cold start). `MessageScroller` handles follow and jump-to-latest.
+- Persistent footer: *"AI assistant, not medical advice. In an emergency, call (301) 555-0148 or go to the nearest
+  emergency room."*
+- `lead_captured` shows a "Request received" confirmation. The *"Prefer a form?"* link opens the form fallback
+  (zod validation mirroring the server; server `422` details map back onto the fields).
+- `conversation_id` is kept in `sessionStorage`, so a refresh continues the chat and a new tab starts a fresh one. A
+  `404` for a stored id (expired) transparently starts a new conversation and resends the message.
+- States: idle, waiting, streaming, error (message plus phone), rate-limited (shows the wait time), conversation
+  limit reached (prompts to call). A failed send restores the typed text into the composer.
+- Page content (prices, hours, insurers) comes from `frontend/src/content/kb.json`, generated from `kb.py`, so the
+  page and the assistant never disagree. CI fails if the generated files drift.
 
 ### 8.3 Dashboard
 - shadcn DataTable: name, interest, priority badge (P1 red · P2 amber · P3 blue · P4 gray), location, created, SLA countdown (overdue highlighted), status.
