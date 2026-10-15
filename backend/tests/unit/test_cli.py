@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from bright_smile.agent.kb import KB
 from bright_smile.cli import build_openapi_schema, main
 from bright_smile.core.security import verify_password
 
@@ -56,3 +57,13 @@ def test_hash_password_ignores_a_piped_byte_order_mark(
     main(["hash-password", "--stdin"])
 
     assert verify_password("correct horse battery", capsys.readouterr().out.strip())
+
+
+def test_export_kb_matches_the_knowledge_base(tmp_path: Path) -> None:
+    output = tmp_path / "kb.json"
+
+    main(["export-kb", "--output", str(output)])
+
+    data = json.loads(output.read_text(encoding="utf-8"))
+    assert data == KB.model_dump(mode="json")
+    assert data["phone"] == "(301) 555-0148"

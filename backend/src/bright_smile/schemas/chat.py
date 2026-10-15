@@ -70,3 +70,6 @@ class DoneEvent(BaseModel):
 type ChatEvent = (
     ConversationEvent | FlagEvent | TokenEvent | LeadCapturedEvent | ErrorEvent | DoneEvent
 )
+
+ChatStreamEvent = Annotated[ChatEvent, Field(discriminator="type")]
+"""One SSE `data` payload. Documented in OpenAPI so clients get generated types."""
