@@ -25,6 +25,8 @@ backend/        FastAPI (async) + LangGraph agent + Beanie/MongoDB. Python, mana
   tests/            unit/ (pure, no I/O) · api/ (httpx + MongoDB) · evals/ (marker `eval`, real API)
 frontend/       Next.js 16 (App Router, TS strict, Cache Components) + shadcn/ui (base-nova). pnpm. See frontend/CLAUDE.md.
 .github/        CI (`ci-ok` is the required merge check), issue/PR templates
+scripts/videos/ demo video recorder (not part of the product). See its README.md.
+reports/        project report. reports/videos/ (recordings) is git-ignored.
 ```
 Layering rule: `api/routes` → `services` → `domain` + `db`. Routes stay thin, `domain` never imports `db`/`api`,
 and nothing imports from `api` except `main.py`. Add a package only when its first module lands.
