@@ -24,4 +24,7 @@ def create_chat_model(settings: Settings) -> BaseChatModel:
         max_retries=2,
         streaming=True,
         stream_usage=True,
+        # Reasoning models reject function tools combined with reasoning_effort on Chat
+        # Completions; the Responses API supports both (issue #21).
+        use_responses_api=True,
     )
