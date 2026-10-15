@@ -13,6 +13,7 @@ from loguru import logger
 from bright_smile import __version__
 from bright_smile.agent.graph import build_agent
 from bright_smile.agent.llm import create_chat_model
+from bright_smile.agent.tools import AGENT_TOOLS
 from bright_smile.api.router import API_PREFIX, api_router
 from bright_smile.core.config import Settings, get_settings
 from bright_smile.core.errors import ErrorResponse, register_error_handlers
@@ -35,7 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         client = create_client(resolved)
         app.state.settings = resolved
         app.state.mongo_client = client
-        app.state.agent = build_agent(create_chat_model(resolved))
+        app.state.agent = build_agent(create_chat_model(resolved), AGENT_TOOLS)
         try:
             await init_db(client, resolved)
             logger.info("startup_complete", environment=resolved.environment, version=__version__)

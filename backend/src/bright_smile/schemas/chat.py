@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from bright_smile.core.errors import ErrorCode
 from bright_smile.domain.flags import Flag
+from bright_smile.domain.leads import Priority
 
 MAX_MESSAGE_CHARS = 1000
 
@@ -50,6 +51,12 @@ class TokenEvent(BaseModel):
     text: str
 
 
+class LeadCapturedEvent(BaseModel):
+    type: Literal[ChatEventType.LEAD_CAPTURED] = ChatEventType.LEAD_CAPTURED
+    lead_id: str
+    priority: Priority
+
+
 class ErrorEvent(BaseModel):
     type: Literal[ChatEventType.ERROR] = ChatEventType.ERROR
     code: ErrorCode
@@ -60,4 +67,6 @@ class DoneEvent(BaseModel):
     type: Literal[ChatEventType.DONE] = ChatEventType.DONE
 
 
-type ChatEvent = ConversationEvent | FlagEvent | TokenEvent | ErrorEvent | DoneEvent
+type ChatEvent = (
+    ConversationEvent | FlagEvent | TokenEvent | LeadCapturedEvent | ErrorEvent | DoneEvent
+)
