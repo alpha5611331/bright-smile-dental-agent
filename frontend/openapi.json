@@ -121,6 +121,47 @@
           }
         }
       }
+    },
+    "/api/leads": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Submit an appointment request from the form fallback",
+        "operationId": "leads-post_lead",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadCreated"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -226,6 +267,129 @@
           "db"
         ],
         "title": "HealthResponse"
+      },
+      "Interest": {
+        "type": "string",
+        "enum": [
+          "new_patient_exam",
+          "cleaning",
+          "filling",
+          "crown",
+          "whitening",
+          "invisalign",
+          "implant",
+          "emergency",
+          "insurance_question",
+          "other"
+        ],
+        "title": "Interest"
+      },
+      "LeadCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Visitor's full name"
+          },
+          "phone": {
+            "type": "string",
+            "format": "phone",
+            "title": "Phone",
+            "description": "US phone number the front desk should call"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "Visitor's email address"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "description": "Reason for the visit, in the visitor's words"
+          },
+          "preferred_location": {
+            "$ref": "#/components/schemas/PreferredLocation",
+            "description": "Preferred office: bethesda, rockville, or no_preference"
+          },
+          "patient_type": {
+            "$ref": "#/components/schemas/PatientType",
+            "description": "new or existing patient, if known",
+            "default": "unknown"
+          },
+          "interest": {
+            "$ref": "#/components/schemas/Interest",
+            "description": "Closest match to what the visitor wants",
+            "default": "other"
+          },
+          "contact_consent": {
+            "type": "boolean",
+            "title": "Contact Consent",
+            "description": "True only if the visitor explicitly agreed to be contacted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone",
+          "email",
+          "reason",
+          "preferred_location",
+          "contact_consent"
+        ],
+        "title": "LeadCreate",
+        "description": "A validated appointment request."
+      },
+      "LeadCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "priority"
+        ],
+        "title": "LeadCreated"
+      },
+      "PatientType": {
+        "type": "string",
+        "enum": [
+          "new",
+          "existing",
+          "unknown"
+        ],
+        "title": "PatientType"
+      },
+      "PreferredLocation": {
+        "type": "string",
+        "enum": [
+          "bethesda",
+          "rockville",
+          "no_preference"
+        ],
+        "title": "PreferredLocation"
+      },
+      "Priority": {
+        "type": "string",
+        "enum": [
+          "P1",
+          "P2",
+          "P3",
+          "P4"
+        ],
+        "title": "Priority",
+        "description": "Callback order: P1 first. String values sort in priority order."
       },
       "ServiceStatus": {
         "type": "string",

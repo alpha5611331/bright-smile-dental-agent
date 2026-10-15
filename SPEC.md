@@ -249,7 +249,7 @@ Base path `/api`. JSON uses `snake_case`. The frontend calls it **same-origin** 
 |---|---|---|
 | `GET /api/health` | public | liveness + DB ping → `{status: "ok", db: "ok"}` |
 | `POST /api/chat` | public (rate-limited) | send a message, receive an SSE stream (§7.2) |
-| `POST /api/leads` | public (rate-limited) | form-fallback lead creation → `201 {id}` |
+| `POST /api/leads` | public (rate-limited) | form-fallback lead creation → `201 {id, priority}` |
 | `GET /api/leads` | staff | `?status&priority&location&page=1&page_size=25&sort=-created_at` → `Page[LeadOut]` |
 | `GET /api/leads/{id}` | staff | `LeadDetail` (lead + transcript + flags) |
 | `PATCH /api/leads/{id}` | staff | `{status?, notes?}` → `LeadOut` |

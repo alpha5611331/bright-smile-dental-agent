@@ -6,14 +6,19 @@ from uuid import UUID, uuid4
 import httpx
 import openai
 import pytest
+from beanie import PydanticObjectId
 from fastapi import FastAPI
 from httpx import AsyncClient
 
 from bright_smile.agent.graph import build_agent
+from bright_smile.agent.tools import AGENT_TOOLS
 from bright_smile.api.deps import get_agent
 from bright_smile.db.documents.conversation import Conversation, MessageRole
+from bright_smile.db.documents.lead import Lead
+from bright_smile.domain.leads import LeadSource
 from bright_smile.services.chat import MAX_USER_TURNS
-from tests.fakes import ScriptedChatModel
+from tests.factories import lead_payload
+from tests.fakes import ScriptedChatModel, tool_call
 
 type Event = tuple[str, dict[str, Any]]
 
@@ -31,7 +36,7 @@ def parse_sse(body: str) -> list[Event]:
 @pytest.fixture
 def model(app: FastAPI) -> Iterator[ScriptedChatModel]:
     scripted = ScriptedChatModel()
-    app.dependency_overrides[get_agent] = lambda: build_agent(scripted)
+    app.dependency_overrides[get_agent] = lambda: build_agent(scripted, AGENT_TOOLS)
     yield scripted
     app.dependency_overrides.pop(get_agent, None)
 
@@ -161,3 +166,88 @@ async def test_llm_failure_streams_error_and_keeps_user_message(
     conversation = await Conversation.get(UUID(events[0][1]["conversation_id"]))
     assert conversation is not None
     assert [m.role for m in conversation.messages] == [MessageRole.USER]
+
+
+async def test_chat_captures_a_lead_and_keeps_the_transcript(
+    client: AsyncClient, model: ScriptedChatModel
+) -> None:
+    model.replies += [
+        tool_call("capture_lead", **lead_payload()),
+        "Thanks, Jane! The front desk will call you within one business day.",
+    ]
+
+    events = parse_sse((await chat(client, "Book me for an Invisalign consult please")).text)
+
+    names = [name for name, _ in events]
+    assert names[0] == "conversation"
+    assert "lead_captured" in names
+    assert names.index("lead_captured") < names.index("token")
+    assert names[-1] == "done"
+    captured = dict(events)["lead_captured"]
+    assert captured["priority"] == "P2"
+
+    conversation_id = UUID(events[0][1]["conversation_id"])
+    lead = await Lead.get(PydanticObjectId(captured["lead_id"]))
+    assert lead is not None
+    assert lead.conversation_id == conversation_id
+    assert lead.source is LeadSource.CHAT
+    conversation = await Conversation.get(conversation_id)
+    assert conversation is not None
+    assert conversation.lead_id == lead.id
+    assert conversation.expires_at is None  # transcripts with a lead are kept
+    assert model.bound_tools == ["capture_lead"]
+
+
+async def test_emergency_conversation_makes_the_lead_p1(
+    client: AsyncClient, model: ScriptedChatModel
+) -> None:
+    model.replies += [
+        "Please go to the nearest emergency room. I can also take your details.",
+        tool_call("capture_lead", **lead_payload(interest="other", patient_type="existing")),
+        "Got it.",
+    ]
+    first = parse_sse((await chat(client, "My face is badly swollen")).text)
+    conversation_id = UUID(first[0][1]["conversation_id"])
+
+    second = parse_sse((await chat(client, "Yes please call me", conversation_id)).text)
+
+    assert dict(second)["lead_captured"]["priority"] == "P1"
+
+
+async def test_invalid_tool_input_is_returned_to_the_model_for_a_re_ask(
+    client: AsyncClient, model: ScriptedChatModel
+) -> None:
+    model.replies += [
+        tool_call("capture_lead", **lead_payload(phone="12345")),
+        "Could you double-check your phone number?",
+    ]
+
+    events = parse_sse((await chat(client, "Please book me")).text)
+
+    names = [name for name, _ in events]
+    assert "lead_captured" not in names
+    assert names[-1] == "done"
+    tool_result = model.calls[1][-1]
+    assert tool_result.type == "tool"
+    assert "phone" in tool_result.text
+    assert (
+        await Lead.find(Lead.conversation_id == UUID(events[0][1]["conversation_id"])).count() == 0
+    )
+
+
+async def test_capture_is_idempotent_per_conversation(
+    client: AsyncClient, model: ScriptedChatModel
+) -> None:
+    model.replies += [
+        tool_call("capture_lead", **lead_payload()),
+        "Done.",
+        tool_call("capture_lead", **lead_payload()),
+        "Already received.",
+    ]
+    first = parse_sse((await chat(client, "Book me")).text)
+    conversation_id = UUID(first[0][1]["conversation_id"])
+
+    second = parse_sse((await chat(client, "Book me again", conversation_id)).text)
+
+    assert "lead_captured" not in [name for name, _ in second]
+    assert await Lead.find(Lead.conversation_id == conversation_id).count() == 1

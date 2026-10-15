@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit an appointment request from the form fallback */
+        post: operations["leads-post_lead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -79,6 +96,78 @@ export interface components {
             status: components["schemas"]["ServiceStatus"];
             db: components["schemas"]["DependencyStatus"];
         };
+        /**
+         * Interest
+         * @enum {string}
+         */
+        Interest: "new_patient_exam" | "cleaning" | "filling" | "crown" | "whitening" | "invisalign" | "implant" | "emergency" | "insurance_question" | "other";
+        /**
+         * LeadCreate
+         * @description A validated appointment request.
+         */
+        LeadCreate: {
+            /**
+             * Name
+             * @description Visitor's full name
+             */
+            name: string;
+            /**
+             * Phone
+             * Format: phone
+             * @description US phone number the front desk should call
+             */
+            phone: string;
+            /**
+             * Email
+             * Format: email
+             * @description Visitor's email address
+             */
+            email: string;
+            /**
+             * Reason
+             * @description Reason for the visit, in the visitor's words
+             */
+            reason: string;
+            /** @description Preferred office: bethesda, rockville, or no_preference */
+            preferred_location: components["schemas"]["PreferredLocation"];
+            /**
+             * @description new or existing patient, if known
+             * @default unknown
+             */
+            patient_type: components["schemas"]["PatientType"];
+            /**
+             * @description Closest match to what the visitor wants
+             * @default other
+             */
+            interest: components["schemas"]["Interest"];
+            /**
+             * Contact Consent
+             * @description True only if the visitor explicitly agreed to be contacted
+             */
+            contact_consent: boolean;
+        };
+        /** LeadCreated */
+        LeadCreated: {
+            /** Id */
+            id: string;
+            priority: components["schemas"]["Priority"];
+        };
+        /**
+         * PatientType
+         * @enum {string}
+         */
+        PatientType: "new" | "existing" | "unknown";
+        /**
+         * PreferredLocation
+         * @enum {string}
+         */
+        PreferredLocation: "bethesda" | "rockville" | "no_preference";
+        /**
+         * Priority
+         * @description Callback order: P1 first. String values sort in priority order.
+         * @enum {string}
+         */
+        Priority: "P1" | "P2" | "P3" | "P4";
         /**
          * ServiceStatus
          * @enum {string}
@@ -187,6 +276,39 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "leads-post_lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadCreated"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

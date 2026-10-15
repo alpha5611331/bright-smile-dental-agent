@@ -12,7 +12,11 @@ dependencies = [
     "langchain-openai>=1.7.2",
     "langgraph>=1.2.15",
     "loguru>=0.7.3",
+    "phonenumbers>=9.0.41",
+    "pydantic-extra-types>=2.11.1",
     "pydantic-settings>=2.16.0",
+    "pydantic[email]>=2.14.1",
+    "tzdata>=2026.5",
 ]
 
 [build-system]

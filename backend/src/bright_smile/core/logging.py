@@ -13,6 +13,8 @@ import inspect
 import json
 import logging
 import sys
+from datetime import UTC
+from enum import Enum
 from typing import TYPE_CHECKING, override
 
 from loguru import logger
@@ -51,10 +53,16 @@ class InterceptHandler(logging.Handler):
         ).log(level, record.getMessage())
 
 
-def _use_stdlib_logger_name(record: "Record") -> None:
-    """Report intercepted records under their original logger name (e.g. `uvicorn.access`)."""
+def _normalize_record(record: "Record") -> None:
+    """Report intercepted records under their original logger name (e.g. `uvicorn.access`) and
+    render enum fields as their plain values in every sink."""
     if (name := record["extra"].pop(_LOGGER_NAME_KEY, None)) is not None:
         record["name"] = str(name)
+    for key, value in record["extra"].items():
+        if isinstance(value, Enum):
+            record["extra"][key] = value.value
+        elif isinstance(value, list) and any(isinstance(v, Enum) for v in value):
+            record["extra"][key] = [v.value if isinstance(v, Enum) else v for v in value]
 
 
 def _dev_format(record: "Record") -> str:
@@ -65,7 +73,7 @@ def _dev_format(record: "Record") -> str:
 
 def _serialize(record: "Record") -> str:
     payload: dict[str, object] = {
-        "ts": record["time"].isoformat(),
+        "ts": record["time"].astimezone(UTC).isoformat(),
         "level": record["level"].name,
         "logger": record["name"],
         "event": record["message"],
@@ -85,7 +93,7 @@ def _json_sink(message: "Message") -> None:
 def configure_logging(level: LogLevel, *, json_logs: bool) -> None:
     """Install loguru sinks and route standard logging through them. Safe to call repeatedly."""
     logger.remove()
-    logger.configure(patcher=_use_stdlib_logger_name)
+    logger.configure(patcher=_normalize_record)
     if json_logs:
         logger.add(_json_sink, level=level.value, enqueue=True, backtrace=False, diagnose=False)
     else:
