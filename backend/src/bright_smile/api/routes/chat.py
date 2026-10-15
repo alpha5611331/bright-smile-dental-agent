@@ -10,7 +10,7 @@ from bright_smile.api.deps import AgentDep, rate_limit
 from bright_smile.core.errors import error_responses
 from bright_smile.core.rate_limit import Policy
 from bright_smile.db.documents.conversation import Conversation
-from bright_smile.schemas.chat import ChatRequest
+from bright_smile.schemas.chat import ChatRequest, ChatStreamEvent
 from bright_smile.services.chat import open_conversation, stream_reply
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -26,9 +26,15 @@ async def _resolve_conversation(body: ChatRequest) -> Conversation:
     response_class=EventSourceResponse,
     summary="Send a message and stream the assistant's reply",
     dependencies=[Depends(rate_limit(Policy.CHAT))],
-    responses=error_responses(
-        status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT, status.HTTP_429_TOO_MANY_REQUESTS
-    ),
+    responses={
+        status.HTTP_200_OK: {
+            "model": ChatStreamEvent,
+            "description": "Server-Sent Events; each `data` line is one of these payloads",
+        },
+        **error_responses(
+            status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT, status.HTTP_429_TOO_MANY_REQUESTS
+        ),
+    },
 )
 async def post_chat(
     body: ChatRequest,
