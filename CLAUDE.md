@@ -98,8 +98,10 @@ Tests create and drop their own throwaway database (`bright_smile_test_<random>`
 - Never add AI-tool attribution lines (e.g. "Generated with Claude Code") to issue or PR descriptions.
 - Never commit directly to `main`. Never force-push shared branches.
 - Conventional Commits (`feat(backend): …`, `fix(frontend): …`, `test: …`, `docs: …`, `chore(ci): …`).
-  **Commit step by step, one logical change per commit**, each passing the hooks on its own (they run on the staged
-  snapshot). Reference the issue (`Refs #N`) and end with the `Co-Authored-By` trailer.
+  **Commit step by step, one logical change per commit**, each passing the hooks on its own. Pre-commit stashes
+  unstaged edits to tracked files but leaves untracked files on disk, so isolate each commit explicitly:
+  `git add <files> && git stash push --keep-index --include-untracked && git commit && git stash pop`.
+  Reference the issue (`Refs #N`) and end with the `Co-Authored-By` trailer.
 - PR titles are Conventional Commits, because the repo allows **merge commits only** and uses the PR title as the merge
   commit title. Every step-by-step commit is preserved on `main`. GitHub deletes the remote branch on merge. Afterwards,
   clean up locally: `git switch main && git pull --ff-only && git fetch --prune && git branch -d <branch>`.
