@@ -4,7 +4,7 @@
 
 An AI front desk for a two-office dental practice. A patient chat assistant answers only from the clinic's knowledge base and turns chats into appointment requests 24/7. A staff dashboard ranks every request by who to call first.
 
-**Live demo:** [patient chat](https://bright-smile-dental-agent-demo.vercel.app) · [staff dashboard](https://bright-smile-dental-agent-demo.vercel.app/dashboard) (password `BrightSmile!@#`)
+**Live demo:** [patient chat](https://bright-smile-agent.vercel.app) · [staff dashboard](https://bright-smile-agent.vercel.app/dashboard) (password `BrightSmile!@#`)
 
 ## Demo videos
 

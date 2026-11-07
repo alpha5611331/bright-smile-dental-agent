@@ -8,8 +8,8 @@ plus a staff dashboard that prioritizes callbacks with a one-business-day SLA.
 ## Live demo
 | | |
 |---|---|
-| Patient chat | <https://bright-smile-dental-agent-demo.vercel.app> |
-| Staff dashboard | <https://bright-smile-dental-agent-demo.vercel.app/dashboard> |
+| Patient chat | <https://bright-smile-agent.vercel.app> |
+| Staff dashboard | <https://bright-smile-agent.vercel.app/dashboard> |
 | Dashboard password | `BrightSmile!@#` |
 
 ## Stack
